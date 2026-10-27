@@ -30,9 +30,14 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
 
+      - name: Install compatible Gradle
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.13-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+
       - name: Build debug APK
         working-directory: android-widget
-        run: chmod +x gradlew && ./gradlew :app:assembleDebug
+        run: /tmp/gradle-8.13/bin/gradle :app:assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
