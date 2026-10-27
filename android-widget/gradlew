@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="8.13"
+CACHE="${GRADLE_USER_HOME:-$HOME/.gradle}/lexica-bootstrap"
+if command -v gradle >/dev/null 2>&1; then
+  GRADLE_BIN="$(command -v gradle)"
+else
+  GRADLE_BIN="$CACHE/gradle-${VERSION}/bin/gradle"
+  if [[ ! -x "$GRADLE_BIN" ]]; then
+    mkdir -p "$CACHE"
+    TMP_ZIP="${TMPDIR:-/tmp}/gradle-${VERSION}-bin.zip"
+    echo "Gradle ${VERSION} is not installed. Downloading it from services.gradle.org..."
+    if command -v curl >/dev/null 2>&1; then curl -fL --retry 2 "https://services.gradle.org/distributions/gradle-${VERSION}-bin.zip" -o "$TMP_ZIP"
+    elif command -v wget >/dev/null 2>&1; then wget -O "$TMP_ZIP" "https://services.gradle.org/distributions/gradle-${VERSION}-bin.zip"
+    else echo "Install curl or wget and try again." >&2; exit 1; fi
+    mkdir -p "$CACHE"
+    unzip -q -o "$TMP_ZIP" -d "$CACHE"
+  fi
+fi
+if [[ ! -f "$ROOT/gradle/wrapper/gradle-wrapper.jar" ]]; then
+  echo "Generating the standard Gradle wrapper for Android Studio..."
+  "$GRADLE_BIN" -p "$ROOT" wrapper --gradle-version "$VERSION" --distribution-type bin
+fi
+exec "$GRADLE_BIN" -p "$ROOT" "$@"

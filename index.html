@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f7f8f4">
+  <meta name="theme-color" content="#f7f8f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111713" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Локальные карточки для изучения слов: заучивание, тесты и перевод. Работает без аккаунта.">
   <link rel="manifest" href="manifest.webmanifest">
   <title>Лексика — карточки</title>
   <style>
     :root {
-      color-scheme: light;
+      color-scheme: light dark;
       --bg: #f7f8f4;
       --paper: #ffffff;
       --ink: #202821;
@@ -174,6 +175,61 @@
     @media (min-width: 560px) { .app { padding-top: 28px; padding-bottom: 30px; } .modal-backdrop { align-items: center; } }
     @media (max-height: 700px) { .flashcard { min-height: 230px; } .face .word-text { font-size: 30px; } .app { padding-top: 12px; } .topbar { margin-bottom: 11px; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+    .import-panel { margin: 18px 0 2px; border: 1px solid var(--line); background: var(--paper); border-radius: 17px; overflow: hidden; }
+    .import-panel summary { cursor: pointer; padding: 15px 16px; font-size: 13px; font-weight: 750; list-style-position: inside; }
+    .import-content { padding: 0 15px 15px; }
+    .import-description { margin: 0 0 14px; }
+    .import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .field select { border: 1px solid var(--line); background: var(--field-bg); border-radius: 12px; padding: 12px 10px; width: 100%; color: var(--ink); min-width: 0; }
+    .field input[type="file"] { padding: 10px; font-size: 12px; }
+    .suggestion { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 100%; text-align: left; }
+    .suggestion small { color: var(--muted); font-size: 10px; font-weight: 650; }
+    .suggestion-text { overflow-wrap: anywhere; }
+    .suggestion:active { transform: scale(.98); }
+    .flashcard { touch-action: pan-y; will-change: transform; transition: transform .18s cubic-bezier(.2,.75,.25,1); }
+    .flashcard.dragging { transition: none; }
+    .swipe-stamp { position: absolute; z-index: 5; top: 20px; padding: 8px 10px; border: 2px solid currentColor; border-radius: 10px; font-size: 11px; line-height: 1; letter-spacing: .09em; font-weight: 900; opacity: 0; pointer-events: none; }
+    .swipe-stamp.left { left: 17px; color: var(--orange); transform: rotate(-9deg); }
+    .swipe-stamp.right { right: 17px; color: var(--green); transform: rotate(9deg); }
+    .flashcard[data-swipe="left"] .swipe-stamp.left { opacity: var(--swipe-opacity, 0); }
+    .flashcard[data-swipe="right"] .swipe-stamp.right { opacity: var(--swipe-opacity, 0); }
+    .speak-btn { position: absolute; z-index: 4; right: 14px; top: 12px; width: 42px; height: 42px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 14px; display: grid; place-items: center; box-shadow: 0 3px 12px rgba(0,0,0,.05); }
+    .speak-btn svg { width: 20px; height: 20px; }
+    .speak-btn:active { transform: scale(.94); }
+    .face .word-text { max-width: 100%; }
+    :root { --field-bg: #fcfdfb; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #101511; --paper: #191f1b; --ink: #edf3ed; --muted: #9aa79c;
+        --line: #303a32; --green: #75c787; --green-dark: #9bd7a5; --green-pale: #203a28;
+        --orange: #f3b653; --orange-pale: #3a2d1b; --red: #ff7777; --red-pale: #3a2223;
+        --shadow: 0 14px 38px rgba(0,0,0,.23); --field-bg: #151b17;
+      }
+      .icon-btn:hover { background: #252e27; }
+      .stat { background: rgba(255,255,255,.025); }
+      .mode, .face, .face.back, .form-panel, .quiz-card, .answer, .secondary, .circle-control, .pill, .suggestion { background: var(--paper); color: var(--ink); }
+      .face.back { background: #1c261e; }
+      .add-card, .translate-btn, .mode-icon { background: var(--green-pale); color: var(--green-dark); border-color: #355b3d; }
+      .mode-icon.orange { background: var(--orange-pale); color: var(--orange); }
+      .field input, .field select { background: var(--field-bg); color: var(--ink); }
+      .progress-track { background: #2a332c; }
+      .word-row { background: rgba(255,255,255,.035); }
+      .empty-state { background: rgba(255,255,255,.025); border-color: var(--line); }
+      .streak-card { background: var(--paper); }
+      .pill.orange { background: var(--orange-pale); color: var(--orange); }
+      .pill.green { background: var(--green-pale); color: var(--green-dark); }
+      .answer.correct { background: var(--green-pale); color: var(--green-dark); }
+      .answer.wrong { background: var(--red-pale); color: var(--red); }
+      .suggestion.selected { background: var(--green-pale); }
+      .danger { background: var(--red-pale); border-color: #5a3434; color: var(--red); }
+      .toast { background: #e8eee8; color: #152018; }
+      .modal-backdrop { background: rgba(0,0,0,.62); }
+      .modal { background: var(--bg); }
+      .speak-btn { box-shadow: none; }
+    }
+
   </style>
 </head>
 <body>
@@ -223,6 +279,19 @@
         <div class="form-actions"><button class="primary" type="submit" id="save-word">Добавить слово</button><button class="secondary" type="button" id="save-and-next">И ещё</button></div>
         <p class="small-note">Словарь хранится на этом устройстве. Для подбора перевода нужен интернет.</p>
       </form>
+      <details class="import-panel" id="import-panel">
+        <summary>Импорт карточек (CSV / TSV / JSON)</summary>
+        <div class="import-content">
+          <p class="subtext import-description">Столбцы: английское слово, перевод. JSON подходит для резервных копий Lexica.</p>
+          <div class="field"><label for="import-file">Файл словаря</label><input type="file" id="import-file" accept=".csv,.tsv,.txt,.json,text/csv,text/tab-separated-values,application/json"></div>
+          <div class="import-grid">
+            <div class="field"><label for="import-delimiter">Разделитель</label><select id="import-delimiter"><option value="auto">Автоопределение</option><option value=",">Запятая (,)</option><option value=";">Точка с запятой (;)</option><option value="tab">Табуляция (TAB)</option><option value="|">Вертикальная черта (|)</option></select></div>
+            <div class="field"><label for="import-header">Первая строка</label><select id="import-header"><option value="auto">Автоопределение</option><option value="yes">Заголовки столбцов</option><option value="no">Это карточка</option></select></div>
+          </div>
+          <button class="secondary" type="button" id="import-button" style="width:100%">Импортировать</button>
+          <p class="small-note">Дубликаты пропускаются. Исходный файл не изменяется.</p>
+        </div>
+      </details>
       <div class="list-head"><h2>Карточки</h2><span class="eyebrow" id="list-count">0</span></div>
       <div class="word-list" id="word-list"></div>
     </section>
@@ -261,10 +330,105 @@
       let chosenSuggestion = '';
       let pendingSubmit = false;
       let suppressCardClick = false;
+      let activeSpeechAudio = null;
+      let importInProgress = false;
       const $ = (selector) => document.querySelector(selector);
       const esc = (value) => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
       const iconTrash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>';
       const iconBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 18-6-6 6-6"/></svg>';
+      const LANG = ((navigator.languages && navigator.languages[0]) || navigator.language || 'ru').toLowerCase().startsWith('en') ? 'en' : 'ru';
+      document.documentElement.lang = LANG;
+      document.title = LANG === 'en' ? 'Lexica — flashcards' : 'Лексика — карточки';
+      const descriptionMeta = document.querySelector('meta[name="description"]');
+      if (descriptionMeta) descriptionMeta.content = LANG === 'en'
+        ? 'Local flashcards for English vocabulary, study sessions, quizzes and translations.'
+        : 'Локальные карточки для изучения слов: заучивание, тесты и перевод. Работает без аккаунта.';
+      if (LANG === 'en') { const brandMark = document.querySelector('.brand-mark'); if (brandMark) brandMark.textContent = 'L'; }
+      const EN = {
+        'лексика':'Lexica','Открыть меню':'Open menu','Меню':'Menu','Твой словарь':'Your vocabulary',
+        'Маленькими шагами.':'Small steps.','Большой словарный запас.':'A bigger vocabulary.',
+        'Без рейтингов и лишнего шума. Только ты и слова.':'No leaderboards, no clutter. Just you and words.',
+        'Серия':'Streak','ЕЩЁ УЧУ':'STILL LEARNING','ВЫУЧЕНО':'MASTERED','дней подряд':'days in a row','день в серии':'day streak','дня в серии':'day streak','дней в серии':'day streak',
+        'Добавить':'Add','слова':'words','слов в словаре':'cards in vocabulary','уже выучено':'mastered',
+        'Что будем делать?':'What would you like to do?','Заучивание':'Study','Карточки по порядку — переворачивай и оценивай себя':'Study cards in order — flip and rate yourself',
+        'Добавь первые слова, чтобы начать':'Add your first words to get started','Тест':'Quiz','Случайные вопросы, направления перевода и варианты ответа':'Random questions, both translation directions, and multiple-choice answers',
+        'Случайный порядок и перевод в обе стороны':'Random order and translation in both directions','Проверь себя, когда появятся карточки':'Test yourself once you have some cards',
+        'Продолжить учёбу · только невыученные':'Continue studying · unmastered only','Режим заучивания':'Study mode','Назад':'Back',
+        'Добавим пару слов?':'Add a few words?','Перевод можно выбрать из подсказок или написать самому.':'Choose a suggested translation or enter your own.',
+        'Слово или фраза на английском':'English word or phrase','Перевод на русский':'Translation into Russian','например, resilience':'e.g. resilience','например, устойчивость':'e.g. resilience',
+        'Подобрать':'Find translations','Варианты перевода · выбери подходящий':'Translation suggestions · choose one','Добавить слово':'Add word','И ещё':'Add another',
+        'Словарь хранится на этом устройстве. Для подбора перевода нужен интернет.':'Your vocabulary stays on this device. Translation suggestions require internet access.',
+        'Карточки':'Cards','Импорт карточек (CSV / TSV / JSON)':'Import cards (CSV / TSV / JSON)',
+        'Столбцы: английское слово, перевод. JSON подходит для резервных копий Lexica.':'Columns: English word, translation. JSON also supports Lexica backups.',
+        'Файл словаря':'Vocabulary file','Разделитель':'Delimiter','Автоопределение':'Auto-detect','Запятая (,)':'Comma (,)','Точка с запятой (;)':'Semicolon (;)','Табуляция (TAB)':'Tab (TAB)','Вертикальная черта (|)':'Pipe (|)',
+        'Первая строка':'First row','Заголовки столбцов':'Column headers','Это карточка':'This is a card','Импортировать':'Import',
+        'Дубликаты пропускаются. Исходный файл не изменяется.':'Duplicates are skipped. The original file is not modified.',
+        'Режим теста':'Quiz mode','Подтверждение':'Confirmation','Закрыть':'Close','Отмена':'Cancel','Подтвердить':'Confirm',
+        'Пока пусто':'Nothing here yet','Добавь первое слово — оно останется здесь, даже если закрыть приложение.':'Add your first word. It will stay here even after you close the app.',
+        'Удалить карточку?':'Delete card?','Удалить':'Delete','Предыдущее слово':'Previous word',
+        'Всё выучено!':'All caught up!','Сначала добавим слова':'Let’s add some words first','В этой подборке больше нет невыученных карточек. Можно сбросить прогресс или повторить весь словарь.':'There are no unmastered cards left in this set. Reset progress or review the whole vocabulary.',
+        'Без карточек тут как на экзамене без билетов.':'No cards here — like an exam with no questions.',
+        'Повторить все слова':'Review all cards','На главную':'Home','Добавить слова':'Add cards','Сессия завершена':'Session complete','Хорошая работа.':'Good work.',
+        'Карточки пройдены. Отметки сохранились на устройстве.':'You finished the cards. Your progress is saved on this device.',
+        'выучено в подборке':'mastered in this set','ещё повторить':'to review','Продолжить учёбу':'Continue studying',
+        'Английский':'English','Русский':'Russian','English':'English','Нажми, чтобы увидеть перевод':'Tap to reveal the translation','Нажми, чтобы вернуться':'Tap to flip back',
+        'Ещё учу':'Still learning','Выучено':'Mastered','Выучено ✓':'Mastered ✓','учу':'learning','знаю':'mastered',
+        'Нужны карточки':'No cards yet','Добавь несколько слов — и устроим им перекрёстный допрос.':'Add a few words and put them to the test.',
+        'Тест завершён':'Quiz complete','Отличный результат.':'Excellent result.','Есть что повторить.':'More to review.','Вопросы шли в случайном порядке и в обоих направлениях.':'Questions were randomized and asked in both translation directions.',
+        'правильных ответов':'correct answers','результат':'score','Пройти ещё раз':'Try again','Выбери правильный перевод.':'Choose the correct translation.',
+        'Верно! Так держать.':'Correct! Keep it up.','Результат':'Results','Следующий вопрос':'Next question','Варианты перевода · выбери подходящий':'Translation suggestions · choose one',
+        'Варианты из переводчика · выбери по смыслу':'Suggestions from translation services · choose by meaning',
+        'Сначала введи английское слово':'Enter an English word first','Ищу…':'Searching…','Подсказки готовы — проверь контекст':'Suggestions are ready — check the context',
+        'Не удалось получить перевод. Введи его вручную или попробуй позже.':'Could not fetch translations. Enter one manually or try again later.',
+        'Заполни слово и перевод':'Enter both the word and its translation','Такая карточка уже есть':'This card already exists','Добавлено. Следующее слово!':'Added. Next word!','Карточка добавлена':'Card added',
+        'Не удалось сохранить карточку. Проверь хранилище браузера.':'Could not save the card. Check browser storage.','Карточка удалена':'Card deleted',
+        'Резервная копия подготовлена':'Backup is ready','Меню словаря':'Vocabulary menu','Сбросить прогресс':'Reset progress','Сбросить прогресс?':'Reset progress?',
+        'Все карточки останутся в словаре, но снова станут невыученными. Это действие нельзя отменить.':'All cards will stay in your vocabulary, but they will become unmastered again. This cannot be undone.',
+        'Да, сбросить':'Yes, reset','Прогресс сброшен':'Progress reset','Не удалось выполнить действие':'Action failed',
+        'Не удалось открыть локальное хранилище':'Could not open local storage','Открой приложение в современном браузере (Chrome, Safari или Firefox) и проверь, что для него разрешено хранение данных.':'Open the app in a modern browser (Chrome, Safari, or Firefox) and make sure storage is enabled.',
+        'Экспорт слов':'Export vocabulary','Сбросить прогресс':'Reset progress','Обновление серии':'Streak updated','Импорт завершён':'Import complete',
+        'Серия занятий':'Study streak','Источник':'Source','Google Translate':'Google Translate','MyMemory':'MyMemory','Lingva':'Lingva','Слушать произношение':'Listen to pronunciation','Слушать':'Listen'
+      };
+      const EN_ATTR = {
+        'Открыть меню':'Open menu','Меню':'Menu','Назад':'Back','Закрыть':'Close','Удалить':'Delete',
+        'Добавить слова':'Add cards','Предыдущее слово':'Previous word','Перевернуть карточку':'Flip card',
+        'Слово или фраза на английском':'English word or phrase','Перевод на русский':'Translation into Russian',
+        'например, resilience':'e.g. resilience','например, устойчивость':'e.g. устойчивость',
+        'Слушать произношение':'Listen to pronunciation','Слушать':'Listen'
+      };
+      function translateText(raw) {
+        if (LANG !== 'en') return raw;
+        const trimmed = raw.trim();
+        if (!trimmed) return raw;
+        let translated = EN[trimmed];
+        if (translated === undefined) {
+          let m;
+          if ((m = trimmed.match(/^(\d+)\/([\d]+) выучено$/))) translated = `${m[1]}/${m[2]} mastered`;
+          else if (trimmed === 'English → Русский') translated = 'English → Russian';
+          else if (trimmed === 'Русский → English') translated = 'Russian → English';
+          else if ((m = trimmed.match(/^(\d+) учу$/))) translated = `${m[1]} learning`;
+          else if ((m = trimmed.match(/^(\d+) знаю$/))) translated = `${m[1]} mastered`;
+          else if ((m = trimmed.match(/^(\d+) верно$/))) translated = `${m[1]} correct`;
+          else if ((m = trimmed.match(/^(\d+) (слово|слова|слов)$/))) translated = `${m[1]} ${Number(m[1]) === 1 ? 'word' : 'words'}`;
+          else if ((m = trimmed.match(/^Правильный ответ: (.*)$/))) translated = `Correct answer: ${m[1]}`;
+          else if ((m = trimmed.match(/^«(.+)» будет удалено из словаря\. Это действие нельзя отменить\.$/))) translated = `“${m[1]}” will be removed from your vocabulary. This cannot be undone.`;
+          else if ((m = trimmed.match(/^Слов: (\d+)\. Выучено: (\d+)\.\n\nВыбери действие: продолжить учёбу на невыученных карточках или сбросить весь прогресс\. Экспорт создаст резервную копию слов\.$/))) translated = `Cards: ${m[1]}. Mastered: ${m[2]}.\n\nChoose an action: continue studying unmastered cards or reset all progress. Export creates a backup.`;
+          else if (trimmed.startsWith('Не удалось импортировать')) translated = trimmed.replace('Не удалось импортировать файл.', 'Could not import the file.');
+          else translated = trimmed;
+        }
+        return raw.replace(trimmed, translated);
+      }
+      function localizeDom(root = document.body) {
+        if (LANG !== 'en' || !root) return;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(node => {
+          if (node.parentElement?.closest('.word-text, .word-row-main, .suggestion-text, .quiz-word, .answer')) return;
+          node.nodeValue = translateText(node.nodeValue);
+        });
+        const elements = root.querySelectorAll ? [root, ...root.querySelectorAll('*')] : [root];
+        elements.forEach(el => { for (const attr of ['placeholder','title','aria-label']) { const val = el.getAttribute?.(attr); if (!val) continue; if (EN_ATTR[val]) el.setAttribute(attr, EN_ATTR[val]); else if (attr === 'aria-label' && val.startsWith('Удалить ')) el.setAttribute(attr, `Delete ${val.slice('Удалить '.length)}`); } });
+      }
 
       function openDb() {
         return new Promise((resolve, reject) => {
@@ -316,19 +480,24 @@
       function recordStudyDay() {
         const today = todayKey();
         const data = streakData();
-        if (data.last === today) return;
+        if (data.last === today) { syncNativeWidget(data.count, data.last); return; }
         const count = data.last === dateOffset(today, -1) ? data.count + 1 : 1;
         localStorage.setItem('lexica-streak', String(count));
         localStorage.setItem('lexica-last-day', today);
+        syncNativeWidget(count, today);
       }
       function displayStreak() {
         const data = streakData();
         const current = data.last === todayKey() || data.last === dateOffset(todayKey(), -1) ? data.count : 0;
         $('#streak-number').textContent = current;
-        $('#streak-caption').textContent = current === 1 ? 'день в серии' : current > 1 && current < 5 ? 'дня в серии' : 'дней в серии';
+        $('#streak-caption').textContent = translateText(current === 1 ? 'день в серии' : current > 1 && current < 5 ? 'дня в серии' : 'дней в серии');
+        syncNativeWidget(current, data.last);
+      }
+      function syncNativeWidget(current, lastDay) {
+        try { if (window.Android && typeof window.Android.updateStreak === 'function') window.Android.updateStreak(Number(current) || 0, String(lastDay || '')); } catch (_) {}
       }
       function showToast(message) {
-        const toast = $('#toast'); toast.textContent = message; toast.classList.add('show');
+        const toast = $('#toast'); toast.textContent = translateText(message); toast.classList.add('show');
         clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
       }
       function showScreen(name) {
@@ -349,6 +518,7 @@
         button.hidden = !(words.length && learned > 0 && learned < words.length);
         $('#start-study').querySelector('.mode-copy span').textContent = words.length ? 'Карточки по порядку — переворачивай и оценивай себя' : 'Добавь первые слова, чтобы начать';
         $('#start-quiz').querySelector('.mode-copy span').textContent = words.length ? 'Случайный порядок и перевод в обе стороны' : 'Проверь себя, когда появятся карточки';
+        localizeDom($('#screen-home'));
       }
       function renderWordList() {
         $('#add-total').textContent = `${words.length} ${pluralWords(words.length)}`;
@@ -356,9 +526,11 @@
         const list = $('#word-list');
         if (!words.length) {
           list.innerHTML = '<div class="empty-state"><div class="empty-icon">＋</div><h2>Пока пусто</h2><p>Добавь первое слово — оно останется здесь, даже если закрыть приложение.</p></div>';
+          localizeDom($('#screen-add'));
           return;
         }
         list.innerHTML = [...words].sort((a,b) => b.createdAt-a.createdAt).map(word => `<div class="word-row"><span class="learned-mark" style="background:${word.learned ? 'var(--green)' : '#e2b15e'}"></span><div class="word-row-main"><strong>${esc(word.en)}</strong><span>${esc(word.ru)}</span></div><button class="delete-btn" data-delete="${esc(word.id)}" aria-label="Удалить ${esc(word.en)}">${iconTrash}</button></div>`).join('');
+        localizeDom($('#screen-add'));
         list.querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', () => {
           const word = words.find(w => w.id === button.dataset.delete);
           openModal('Удалить карточку?', `«${word?.en || 'Слово'}» будет удалено из словаря. Это действие нельзя отменить.`, 'Удалить', async () => {
@@ -386,6 +558,7 @@
           body.innerHTML = `<div class="completion"><div class="completion-mark">${words.length ? '✓' : '＋'}</div><h1>${words.length ? 'Всё выучено!' : 'Сначала добавим слова'}</h1><p class="subtext">${words.length ? 'В этой подборке больше нет невыученных карточек. Можно сбросить прогресс или повторить весь словарь.' : 'Без карточек тут как на экзамене без билетов.'}</p><div class="button-stack"><button class="primary" id="completion-continue">${words.length ? 'Повторить все слова' : 'Добавить слова'}</button>${words.length ? '<button class="secondary" id="completion-home">На главную</button>' : ''}</div></div>`;
           $('#completion-continue').addEventListener('click', () => words.length ? startStudy(false) : showScreen('add'));
           $('#completion-home')?.addEventListener('click', () => showScreen('home'));
+          localizeDom(body);
           return;
         }
         if (studyIndex >= queue.length) {
@@ -394,29 +567,77 @@
           body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Карточки пройдены. Отметки сохранились на устройстве.</p><div class="completion-stats"><div><strong>${learnedInQueue}</strong><span>выучено в подборке</span></div><div><strong>${pending}</strong><span>ещё повторить</span></div></div><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Продолжить учёбу</button>' : '<button class="primary" id="completion-continue">Повторить все слова</button>'}<button class="secondary" id="completion-home">На главную</button></div></div>`;
           $('#completion-continue').addEventListener('click', () => pending ? startStudy(true) : startStudy(false));
           $('#completion-home').addEventListener('click', () => showScreen('home'));
+          localizeDom(body);
           return;
         }
         const word = queue[studyIndex];
         const learnedCount = queue.filter(w => w.learned).length;
         const pendingCount = queue.length - learnedCount;
-        body.innerHTML = `<div class="progress-head"><div style="flex:1;min-width:0"><div class="progress-number">${studyIndex+1}<span> / ${queue.length}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(studyIndex/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} учу</div><div class="pill green">${learnedCount} знаю</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">English</span><div class="word-text">${esc(word.en)}</div><span class="tap-hint">Нажми, чтобы увидеть перевод</span></div><div class="face back"><span class="face-label">Русский</span><div class="word-text">${esc(word.ru)}</div><span class="tap-hint">Нажми, чтобы вернуться</span></div></div></div><div class="gesture-hints"><span class="left"><b>←</b> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
+        body.innerHTML = `<div class="progress-head"><div style="flex:1;min-width:0"><div class="progress-number">${studyIndex+1}<span> / ${queue.length}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(studyIndex/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} учу</div><div class="pill green">${learnedCount} знаю</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">English</span><button class="speak-btn" id="speak-word" type="button" aria-label="Слушать произношение" title="Слушать" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button><div class="word-text">${esc(word.en)}</div><span class="tap-hint">Нажми, чтобы увидеть перевод</span></div><div class="face back"><span class="face-label">Русский</span><div class="word-text">${esc(word.ru)}</div><span class="tap-hint">Нажми, чтобы вернуться</span></div></div><div class="swipe-stamp left">ЕЩЁ УЧУ</div><div class="swipe-stamp right">ВЫУЧЕНО</div></div><div class="gesture-hints"><span class="left"><b>←</b> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
+        localizeDom(body);
         const card = $('#flashcard');
-        card.addEventListener('click', () => { if (suppressCardClick) { suppressCardClick = false; return; } flipped = !flipped; card.classList.toggle('flipped', flipped); });
-        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipped = !flipped; card.classList.toggle('flipped', flipped); } });
-        let startX = 0, startY = 0;
-        card.addEventListener('pointerdown', e => { startX = e.clientX; startY = e.clientY; });
+        card.addEventListener('click', e => { if (e.target.closest('#speak-word')) return; if (suppressCardClick) { suppressCardClick = false; return; } if (gestureMoved) { gestureMoved = false; return; } flipped = !flipped; card.classList.toggle('flipped', flipped); });
+        card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('#speak-word')) { e.preventDefault(); flipped = !flipped; card.classList.toggle('flipped', flipped); } });
+        $('#speak-word').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); speakWord(word.en); });
+        let startX = 0, startY = 0, deltaX = 0, deltaY = 0, pointerId = null;
+        let gestureMoved = false;
+        const resetDrag = () => { card.classList.remove('dragging'); card.removeAttribute('data-swipe'); card.style.removeProperty('--swipe-opacity'); card.style.transform = ''; };
+        card.addEventListener('pointerdown', e => {
+          if (e.target.closest('#speak-word')) return;
+          startX = e.clientX; startY = e.clientY; deltaX = 0; deltaY = 0; pointerId = e.pointerId; gestureMoved = false;
+          try { card.setPointerCapture(pointerId); } catch (_) {}
+        });
+        card.addEventListener('pointermove', e => {
+          if (pointerId !== e.pointerId) return;
+          deltaX = e.clientX - startX; deltaY = e.clientY - startY;
+          if (Math.abs(deltaX) < 5 || Math.abs(deltaX) < Math.abs(deltaY) * 1.1) return;
+          gestureMoved = true; card.classList.add('dragging'); card.dataset.swipe = deltaX < 0 ? 'left' : 'right';
+          card.style.setProperty('--swipe-opacity', String(Math.min(1, Math.abs(deltaX) / 105)));
+          card.style.transform = `translateX(${deltaX}px) rotate(${Math.max(-12, Math.min(12, deltaX / 22))}deg)`;
+        });
         card.addEventListener('pointerup', async e => {
-          const dx = e.clientX-startX, dy = e.clientY-startY;
-          if (Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy)*1.2) {
-            e.preventDefault();
+          if (pointerId !== e.pointerId) return;
+          pointerId = null;
+          const dx = deltaX, dy = deltaY;
+          const swiped = Math.abs(dx) > Math.max(75, card.clientWidth * .22) && Math.abs(dx) > Math.abs(dy) * 1.15;
+          if (swiped) {
             suppressCardClick = true;
-            setTimeout(() => { suppressCardClick = false; }, 400);
-            if (dx < 0) await markAndNext(false); else await markAndNext(true);
+            card.classList.remove('dragging');
+            card.style.transition = 'transform .19s cubic-bezier(.2,.75,.25,1)';
+            card.style.transform = `translateX(${dx < 0 ? -window.innerWidth : window.innerWidth}px) rotate(${dx < 0 ? -18 : 18}deg)`;
+            await new Promise(resolve => setTimeout(resolve, 190));
+            resetDrag();
+            await markAndNext(dx >= 0);
+            setTimeout(() => { suppressCardClick = false; gestureMoved = false; }, 80);
+          } else {
+            resetDrag();
+            if (gestureMoved) { suppressCardClick = true; setTimeout(() => { suppressCardClick = false; gestureMoved = false; }, 80); }
           }
         });
+        card.addEventListener('pointercancel', () => { pointerId = null; resetDrag(); gestureMoved = false; });
         $('#study-prev').addEventListener('click', () => { if (studyIndex > 0) { studyIndex--; flipped = false; renderStudy(); } });
         $('#mark-learning').addEventListener('click', () => markAndNext(false));
         $('#mark-learned').addEventListener('click', () => markAndNext(true));
+      }
+      async function speakWord(text, lang = 'en-US') {
+        if (activeSpeechAudio) { try { activeSpeechAudio.pause(); activeSpeechAudio.currentTime = 0; } catch (_) {} }
+        let fallbackUsed = false;
+        const fallback = () => {
+          if (fallbackUsed) return; fallbackUsed = true;
+          if ('speechSynthesis' in window) {
+            try { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = lang; utterance.rate = 0.92; window.speechSynthesis.speak(utterance); }
+            catch (_) { showToast(LANG === 'en' ? 'Audio playback is not available on this device.' : 'На устройстве недоступно озвучивание.'); }
+          } else showToast(LANG === 'en' ? 'Audio playback is not available on this device.' : 'На устройстве недоступно озвучивание.');
+        };
+        // Stream from Google Translate without writing an audio file to local storage.
+        // This endpoint is unofficial and may be rate-limited or changed without notice.
+        const serviceLanguage = lang.startsWith('en') ? 'en' : lang;
+        const streamUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(serviceLanguage)}&q=${encodeURIComponent(text)}`;
+        activeSpeechAudio = new Audio(streamUrl);
+        activeSpeechAudio.preload = 'none';
+        activeSpeechAudio.onerror = fallback;
+        try { await activeSpeechAudio.play(); }
+        catch (_) { fallback(); }
       }
       async function markAndNext(isLearned) {
         const queue = getStudyWords();
@@ -449,18 +670,19 @@
         const body = $('#quiz-body');
         if (!words.length) {
           body.innerHTML = '<div class="empty-state"><div class="empty-icon">?</div><h2>Нужны карточки</h2><p>Добавь несколько слов — и устроим им перекрёстный допрос.</p><button class="primary" id="quiz-add">Добавить слова</button></div>';
-          $('#quiz-add').addEventListener('click', () => showScreen('add')); return;
+          $('#quiz-add').addEventListener('click', () => showScreen('add')); localizeDom(body); return;
         }
         if (quizIndex >= quizQueue.length) {
           const percent = Math.round(quizScore/quizQueue.length*100);
           body.innerHTML = `<div class="completion"><div class="completion-mark">${percent >= 80 ? '✦' : '✓'}</div><div class="eyebrow">Тест завершён</div><h1>${percent >= 80 ? 'Отличный результат.' : 'Есть что повторить.'}</h1><p class="subtext">Вопросы шли в случайном порядке и в обоих направлениях.</p><div class="completion-stats"><div><strong>${quizScore}/${quizQueue.length}</strong><span>правильных ответов</span></div><div><strong>${percent}%</strong><span>результат</span></div></div><div class="button-stack"><button class="primary" id="quiz-again">Пройти ещё раз</button><button class="secondary" id="quiz-home">На главную</button></div></div>`;
-          $('#quiz-again').addEventListener('click', startQuiz); $('#quiz-home').addEventListener('click', () => showScreen('home')); return;
+          $('#quiz-again').addEventListener('click', startQuiz); $('#quiz-home').addEventListener('click', () => showScreen('home')); localizeDom(body); return;
         }
         if (!quizQuestion) quizQuestion = makeQuizQuestion();
         const q = quizQuestion;
         body.innerHTML = `<div class="progress-head"><div style="flex:1"><div class="progress-number">${quizIndex+1}<span> / ${quizQueue.length}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(quizIndex/quizQueue.length)*100}%"></div></div></div><div class="pill">${quizScore} верно</div></div><div class="quiz-card"><div><div class="face-label">${q.promptLanguage} → ${q.answerLanguage}</div><div class="quiz-word">${esc(q.prompt)}</div></div></div><div class="answer-list" id="answer-list">${q.options.map((option,i)=>`<button class="answer" data-answer="${esc(option.id)}"><span class="answer-key">${['A','B','C'][i]}</span><span>${esc(option.value)}</span></button>`).join('')}</div><div class="quiz-feedback" id="quiz-feedback">Выбери правильный перевод.</div><div class="quiz-bottom"><button class="primary" id="quiz-next" style="width:100%" hidden>${quizIndex===quizQueue.length-1?'Результат':'Следующий вопрос'} →</button></div>`;
         $('#answer-list').querySelectorAll('[data-answer]').forEach(button => button.addEventListener('click', () => answerQuiz(button.dataset.answer)));
         $('#quiz-next').addEventListener('click', () => { quizIndex++; quizQuestion = null; quizAnswered = false; renderQuiz(); });
+        localizeDom(body);
       }
       function answerQuiz(id) {
         if (quizAnswered || !quizQuestion) return;
@@ -474,16 +696,28 @@
           else if (button.dataset.answer === id) button.classList.add('wrong');
         });
         const feedback = $('#quiz-feedback'); feedback.className = `quiz-feedback ${correct?'good':'bad'}`;
-        feedback.textContent = correct ? 'Верно! Так держать.' : `Правильный ответ: ${quizQuestion.correctValue}`;
+        feedback.textContent = translateText(correct ? 'Верно! Так держать.' : `Правильный ответ: ${quizQuestion.correctValue}`);
         $('#quiz-next').hidden = false; $('#quiz-next').focus();
       }
-      function renderSuggestions(items, sourceLabel='Варианты перевода · выбери подходящий') {
+      function renderSuggestions(items, sourceLabel = 'Варианты перевода · выбери подходящий') {
         const box = $('#suggestions'); const list = $('#suggestion-list');
-        const cleaned = [...new Set(items.map(s => String(s).trim()).filter(Boolean))].slice(0,7);
-        if (!cleaned.length) { box.classList.remove('visible'); return; }
-        $('#suggestion-title').textContent = sourceLabel;
-        list.innerHTML = cleaned.map(item => `<button type="button" class="suggestion ${item === chosenSuggestion ? 'selected' : ''}" data-suggestion="${esc(item)}">${esc(item)}</button>`).join('');
+        const byText = new Map();
+        for (const item of items) {
+          const text = String(item.text || item).trim();
+          if (!text) continue;
+          const key = text.toLocaleLowerCase();
+          const source = item.source || 'Manual';
+          if (byText.has(key)) {
+            const current = byText.get(key);
+            current.source = [...new Set([...current.source.split(' · '), source])].join(' · ');
+          } else if (byText.size < 12) byText.set(key, {text, source});
+        }
+        const unique = [...byText.values()];
+        if (!unique.length) { box.classList.remove('visible'); list.innerHTML = ''; return; }
+        $('#suggestion-title').textContent = translateText(sourceLabel);
+        list.innerHTML = unique.map(item => `<button type="button" class="suggestion ${item.text === chosenSuggestion ? 'selected' : ''}" data-suggestion="${esc(item.text)}"><span class="suggestion-text">${esc(item.text)}</span><small>${esc(item.source)}</small></button>`).join('');
         box.classList.add('visible');
+        localizeDom(box);
         list.querySelectorAll('[data-suggestion]').forEach(button => button.addEventListener('click', () => {
           chosenSuggestion = button.dataset.suggestion; $('#translation-input').value = chosenSuggestion;
           list.querySelectorAll('.suggestion').forEach(el => el.classList.toggle('selected', el.dataset.suggestion === chosenSuggestion));
@@ -492,22 +726,88 @@
       async function translateWord() {
         const en = $('#word-input').value.trim();
         if (!en) { $('#word-input').focus(); showToast('Сначала введи английское слово'); return; }
-        const button = $('#translate-button'); button.disabled = true; button.textContent = 'Ищу…';
+        const button = $('#translate-button'); button.disabled = true; button.textContent = translateText('Ищу…');
+        chosenSuggestion = ''; $('#translation-input').value = '';
+        const services = [
+          {
+            name: 'MyMemory',
+            run: async () => {
+              const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(en)}&langpair=en%7Cru`;
+              const response = await fetch(url, {headers:{'Accept':'application/json'}, signal:AbortSignal.timeout(9000)});
+              if (!response.ok) throw new Error(`MyMemory HTTP ${response.status}`);
+              const data = await response.json();
+              const matches = (data.matches || []).sort((a,b)=>Number(b.match||0)-Number(a.match||0)).map(m=>m.translation).filter(Boolean);
+              return [data.responseData?.translatedText, ...matches].filter(Boolean).filter(t=>!/^NO QUERY/i.test(t)).map(text=>({text,source:'MyMemory'}));
+            }
+          },
+          {
+            name: 'Google Translate',
+            run: async () => {
+              // Unofficial web endpoint: no SLA, and Google can change or rate-limit it.
+              const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=${encodeURIComponent(en)}`;
+              const response = await fetch(url, {headers:{'Accept':'application/json'}, signal:AbortSignal.timeout(9000)});
+              if (!response.ok) throw new Error(`Google HTTP ${response.status}`);
+              const data = await response.json();
+              const translated = (data[0] || []).map(part=>part?.[0]).filter(Boolean).join('').trim();
+              return translated ? [{text:translated,source:'Google Translate'}] : [];
+            }
+          },
+          {
+            name: 'Lingva',
+            run: async () => {
+              // Lingva is an unofficial front end; public instances are ephemeral.
+              // Query a small allowlist in parallel and accept the first valid response.
+              const instances = [
+                'https://lingva.ml',
+                'https://translate.igna.wtf',
+                'https://translate.plausibility.cloud',
+                'https://lingva.lunar.icu',
+                'https://lingva.garudalinux.org'
+              ];
+              const controllers = [];
+              const valid = instances.map(async base => {
+                const controller = new AbortController();
+                controllers.push(controller);
+                const timeout = setTimeout(() => controller.abort(), 5500);
+                try {
+                  const response = await fetch(`${base}/api/v1/en/ru/${encodeURIComponent(en)}`, {
+                    headers:{'Accept':'application/json'}, signal:controller.signal
+                  });
+                  if (!response.ok) throw new Error(`Lingva HTTP ${response.status}`);
+                  const data = await response.json();
+                  const translation = String(data.translation || '').trim();
+                  if (!translation) throw new Error('Empty Lingva response');
+                  return {text:translation,source:`Lingva · ${new URL(base).hostname}`};
+                } finally { clearTimeout(timeout); }
+              });
+              try {
+                const result = await Promise.any(valid);
+                controllers.forEach(controller => controller.abort());
+                return [result];
+              } catch (error) {
+                controllers.forEach(controller => controller.abort());
+                throw error;
+              }
+            }
+          }
+        ];
         try {
-          const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(en)}&langpair=en%7Cru`;
-          const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const data = await response.json();
-          const matches = (data.matches || []).sort((a,b) => Number(b.match || 0)-Number(a.match || 0)).map(m => m.translation).filter(Boolean);
-          const results = [data.responseData?.translatedText, ...matches].filter(Boolean).filter(t => !/^NO QUERY/i.test(t));
-          if (!results.length) throw new Error('Пустой ответ');
-          chosenSuggestion = results[0];
-          $('#translation-input').value = results[0];
-          renderSuggestions(results, 'Варианты из переводчика · выбери по смыслу');
-          showToast('Подсказки готовы — проверь контекст');
+          const responses = await Promise.allSettled(services.map(service=>service.run()));
+          const results = [];
+          responses.forEach((result,i)=>{ if(result.status==='fulfilled') results.push(...result.value); });
+          // A delayed response for a previous word must never overwrite current suggestions.
+          if ($('#word-input').value.trim() !== en) return;
+          const cleaned = results.filter(x=>x.text && !/^NO QUERY/i.test(x.text));
+          if (!cleaned.length) throw new Error('Every translation provider failed');
+          chosenSuggestion = '';
+          $('#translation-input').value = '';
+          renderSuggestions(cleaned, 'Варианты из переводчика · выбери по смыслу');
+          const successful = new Set(cleaned.map(x=>x.source)).size;
+          showToast(LANG === 'en' ? `Got suggestions from ${successful} translation service${successful===1?'':'s'}. Choose one below.` : `Подсказки получены от ${successful} сервисов. Выбери вариант ниже.`);
         } catch (error) {
-          renderSuggestions([]); showToast('Не удалось получить перевод. Введи его вручную или попробуй позже.');
-        } finally { button.disabled = false; button.textContent = 'Подобрать'; }
+          chosenSuggestion = ''; $('#translation-input').value = ''; renderSuggestions([]);
+          showToast('Не удалось получить перевод. Введи его вручную или попробуй позже.');
+        } finally { button.disabled = false; button.textContent = translateText('Подобрать'); }
       }
       async function addWord(event, addAnother) {
         event?.preventDefault();
@@ -527,7 +827,7 @@
         finally { pendingSubmit = false; $('#save-word').disabled = false; $('#save-and-next').disabled = false; }
       }
       function openModal(title, message, confirmText, action) {
-        $('#modal-title').textContent = title; $('#modal-message').textContent = message; $('#modal-confirm').textContent = confirmText; $('#modal-cancel').textContent = 'Отмена'; modalAction = action;
+        $('#modal-title').textContent = translateText(title); $('#modal-message').textContent = translateText(message); $('#modal-confirm').textContent = translateText(confirmText); $('#modal-cancel').textContent = translateText('Отмена'); modalAction = action;
         const extra = $('#modal-extra'); if (extra) extra.style.display = 'none';
         $('#modal-backdrop').classList.add('open'); $('#modal-confirm').focus();
       }
@@ -538,22 +838,88 @@
         const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `lexica-backup-${todayKey()}.json`; a.click(); URL.revokeObjectURL(url);
         showToast('Резервная копия подготовлена');
       }
+      function detectDelimiter(line) {
+        const candidates = [',', ';', '\t', '|'];
+        const counts = candidates.map(delim => {
+          let n = 0, quoted = false;
+          for (let i=0;i<line.length;i++) { if (line[i] === '"') { if (quoted && line[i+1] === '"') i++; else quoted = !quoted; } else if (line[i] === delim && !quoted) n++; }
+          return {delim, n};
+        }).sort((a,b)=>b.n-a.n);
+        return counts[0].n > 0 ? counts[0].delim : ',';
+      }
+      function parseDelimited(text, delimiter) {
+        const rows = []; let row = [], field = '', quoted = false;
+        for (let i=0;i<text.length;i++) {
+          const ch = text[i];
+          if (ch === '"') {
+            if (quoted && text[i+1] === '"') { field += '"'; i++; }
+            else quoted = !quoted;
+          } else if (ch === delimiter && !quoted) { row.push(field); field = ''; }
+          else if ((ch === '\n' || ch === '\r') && !quoted) {
+            if (ch === '\r' && text[i+1] === '\n') i++;
+            row.push(field); if (row.some(v=>String(v).trim()!=='')) rows.push(row);
+            row = []; field = '';
+          } else field += ch;
+        }
+        row.push(field); if (row.some(v=>String(v).trim()!=='')) rows.push(row);
+        return rows;
+      }
+      function headerLikely(row) {
+        const first = String(row?.[0] || '').trim().toLowerCase(); const second = String(row?.[1] || '').trim().toLowerCase();
+        return ['en','english','word','term','слово','английский'].includes(first) || ['ru','russian','translation','meaning','перевод','русский'].includes(second);
+      }
+      async function importVocabulary() {
+        if (importInProgress) return;
+        const file = $('#import-file').files?.[0];
+        if (!file) { showToast(LANG === 'en' ? 'Choose a file first.' : 'Сначала выбери файл.'); return; }
+        importInProgress = true; $('#import-button').disabled = true;
+        try {
+          const raw = await file.text(); let incoming = [];
+          if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
+            const parsed = JSON.parse(raw.replace(/^\uFEFF/, ''));
+            const source = Array.isArray(parsed) ? parsed : parsed.words;
+            if (!Array.isArray(source)) throw new Error('JSON file does not contain a words array');
+            incoming = source.map(w=>({en:String(w.en ?? w.english ?? w.word ?? '').trim(), ru:String(w.ru ?? w.translation ?? w.meaning ?? '').trim(), learned:Boolean(w.learned), createdAt:Number(w.createdAt)||Date.now()})).filter(w=>w.en && w.ru);
+          } else {
+            let selected = $('#import-delimiter').value;
+            let delimiter = selected === 'auto' ? detectDelimiter((raw.replace(/^\uFEFF/, '').split(/\r?\n/,1)[0] || '')) : selected === 'tab' ? '\t' : selected;
+            const rows = parseDelimited(raw.replace(/^\uFEFF/, ''), delimiter);
+            if (!rows.length) throw new Error('No rows found');
+            const headerMode = $('#import-header').value;
+            const skipHeader = headerMode === 'yes' || (headerMode === 'auto' && headerLikely(rows[0]));
+            if (skipHeader && rows.length < 2) throw new Error('The file only contains a header row');
+            const dataRows = skipHeader ? rows.slice(1) : rows;
+            incoming = dataRows.map(row=>({en:String(row[0] || '').trim(),ru:String(row[1] || '').trim(),learned:false,createdAt:Date.now()})).filter(w=>w.en && w.ru);
+          }
+          let added = 0, duplicates = 0;
+          for (const item of incoming) {
+            const dup = words.some(w=>w.en.trim().toLocaleLowerCase()===item.en.toLocaleLowerCase() && w.ru.trim().toLocaleLowerCase()===item.ru.toLocaleLowerCase());
+            if (dup) { duplicates++; continue; }
+            const word = {id:(crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), en:item.en, ru:item.ru, learned:Boolean(item.learned), createdAt:item.createdAt || Date.now()};
+            await putWord(word); words.push(word); added++;
+          }
+          renderWordList(); renderHome();
+          showToast(LANG === 'en' ? `Imported ${added} card${added===1?'':'s'}; skipped ${duplicates} duplicate${duplicates===1?'':'s'}.` : `Импортировано: ${added}. Дубликатов пропущено: ${duplicates}.`);
+        } catch (error) {
+          showToast(LANG === 'en' ? `Could not import the file. Check the format and selected delimiter. (${error.message})` : `Не удалось импортировать файл. Проверь формат и выбранный разделитель. (${error.message})`);
+        } finally { importInProgress = false; $('#import-button').disabled = false; }
+      }
       function handleMenu() {
         const hasLearned = words.some(w=>w.learned);
-        const message = `Слов: ${words.length}. Выучено: ${words.filter(w=>w.learned).length}.\n\nВыбери действие: продолжить учёбу на невыученных карточках или сбросить весь прогресс. Экспорт создаст резервную копию слов.`;
+        const message = LANG === 'en' ? `Cards: ${words.length}. Mastered: ${words.filter(w=>w.learned).length}.\n\nChoose an action: continue studying unmastered cards or reset all progress. Export creates a backup.` : `Слов: ${words.length}. Выучено: ${words.filter(w=>w.learned).length}.\n\nВыбери действие: продолжить учёбу на невыученных карточках или сбросить весь прогресс. Экспорт создаст резервную копию слов.`;
         openModal('Меню словаря', message, 'Сбросить прогресс', async () => {
           openModal('Сбросить прогресс?', 'Все карточки останутся в словаре, но снова станут невыученными. Это действие нельзя отменить.', 'Да, сбросить', async () => {
             words.forEach(w => w.learned = false); await saveAll(); renderHome(); showToast('Прогресс сброшен');
           });
         });
-        $('#modal-cancel').textContent = 'Закрыть';
-        $('#modal-confirm').textContent = 'Сбросить прогресс';
+        $('#modal-cancel').textContent = translateText('Закрыть');
+        $('#modal-confirm').textContent = translateText('Сбросить прогресс');
         // Put safe secondary actions into the modal without creating a second settings screen.
         let extra = $('#modal-extra');
         if (!extra) { extra = document.createElement('div'); extra.id='modal-extra'; extra.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px'; $('#modal-actions-placeholder'); $('.modal-actions').after(extra); }
         extra.style.display = 'grid';
-        extra.innerHTML = `<button class="secondary" id="menu-continue" ${hasLearned && words.some(w=>!w.learned) ? '' : 'disabled'}>Продолжить учёбу</button><button class="secondary" id="menu-export">Экспорт слов</button>`;
-        $('#menu-continue').onclick = () => { closeModal(); if (words.some(w=>!w.learned)) startStudy(true); else showToast('Все карточки уже выучены'); };
+        extra.innerHTML = `<button class="secondary" id="menu-continue" ${hasLearned && words.some(w=>!w.learned) ? '' : 'disabled'}>${LANG === 'en' ? 'Continue studying' : 'Продолжить учёбу'}</button><button class="secondary" id="menu-export">${LANG === 'en' ? 'Export vocabulary' : 'Экспорт слов'}</button>`;
+        $('#menu-continue').onclick = () => { closeModal(); if (words.some(w=>!w.learned)) startStudy(true); else showToast(LANG === 'en' ? 'All cards are already mastered.' : 'Все карточки уже выучены'); };
         $('#menu-export').onclick = () => { closeModal(); exportWords(); };
         $('#modal-cancel').onclick = closeModal;
       }
@@ -566,7 +932,8 @@
       $('#word-form').addEventListener('submit', e => addWord(e, false));
       $('#save-and-next').addEventListener('click', e => addWord(e, true));
       $('#translate-button').addEventListener('click', translateWord);
-      $('#word-input').addEventListener('input', () => { chosenSuggestion = ''; $('#suggestions').classList.remove('visible'); });
+      $('#import-button').addEventListener('click', importVocabulary);
+      $('#word-input').addEventListener('input', () => { chosenSuggestion = ''; $('#translation-input').value = ''; $('#suggestions').classList.remove('visible'); });
       $('#translation-input').addEventListener('input', () => { chosenSuggestion = ''; });
       $('#menu-button').addEventListener('click', handleMenu);
       $('#modal-close').addEventListener('click', closeModal);
@@ -582,10 +949,10 @@
           db = await openDb(); words = await readAllWords();
           // Normalize records if an older local schema or partial edit left fields missing.
           words = words.filter(w => w && w.id && typeof w.en === 'string' && typeof w.ru === 'string').map(w => ({...w, learned: Boolean(w.learned), createdAt: Number(w.createdAt)||Date.now()}));
-          renderHome(); renderWordList();
+          renderHome(); renderWordList(); localizeDom(document.body);
           if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => {});
         } catch (error) {
-          document.body.innerHTML = '<div style="padding:30px;font-family:system-ui;max-width:500px;margin:auto"><h1>Не удалось открыть локальное хранилище</h1><p>Открой приложение в современном браузере (Chrome, Safari или Firefox) и проверь, что для него разрешено хранение данных.</p></div>';
+          document.body.innerHTML = LANG === 'en' ? '<div style="padding:30px;font-family:system-ui;max-width:500px;margin:auto"><h1>Could not open local storage</h1><p>Open the app in a modern browser and make sure storage is enabled.</p></div>' : '<div style="padding:30px;font-family:system-ui;max-width:500px;margin:auto"><h1>Не удалось открыть локальное хранилище</h1><p>Открой приложение в современном браузере и проверь, что для него разрешено хранение данных.</p></div>';
         }
       }
       init();

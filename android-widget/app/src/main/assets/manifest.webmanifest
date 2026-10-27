@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Lexica — Flashcards",
+  "short_name": "Lexica",
+  "description": "Local flashcards for learning English vocabulary",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101511",
+  "theme_color": "#101511",
+  "orientation": "portrait",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
+  "shortcuts": [
+    { "name": "Study", "short_name": "Study", "url": "./?mode=study" },
+    { "name": "Add cards", "short_name": "Add", "url": "./?mode=add" }
+  ]
+}

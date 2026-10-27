@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Лексика</string>
+    <string name="widget_title">СЕРИЯ ЗАНЯТИЙ</string>
+    <string name="widget_description">Количество дней подряд с занятиями в Лексике</string>
+    <string name="widget_streak_english">day streak</string>
+    <string name="widget_day_one">день подряд</string>
+    <string name="widget_day_few">дня подряд</string>
+    <string name="widget_day_many">дней подряд</string>
+</resources>
