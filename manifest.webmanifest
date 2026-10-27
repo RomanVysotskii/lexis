@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Лексика — карточки для слов",
+  "short_name": "Лексика",
+  "description": "Локальный словарь и карточки для изучения английских слов",
+  "lang": "ru",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f8f4",
+  "theme_color": "#f7f8f4",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
