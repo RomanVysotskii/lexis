@@ -1007,7 +1007,8 @@
           const raw = (await file.text()).replace(/^\uFEFF/, '');
           let incoming = [];
           const looksLikeDashText = /\.txt$/i.test(file.name) && raw.split(/\r?\n/).some(line => /^.+?\s+-\s+.+$/.test(line));
-          if (selectedImportFormat === 'dash' || (selectedImportFormat === 'auto' && looksLikeDashText)) {
+          const isDashImport = selectedImportFormat === 'dash' || (selectedImportFormat === 'auto' && looksLikeDashText);
+          if (isDashImport) {
             const parsed = parseDashText(raw);
             invalidLineCount = parsed.invalidLines.length;
             incoming = parsed.rows.map(([en,ru])=>({en,ru,learned:false,learnedReverse:false,createdAt:0}));
@@ -1028,28 +1029,51 @@
             const dataRows = skipHeader ? rows.slice(1) : rows;
             incoming = dataRows.map(row=>({en:String(row[0] || '').trim(),ru:String(row[1] || '').trim(),learned:false,learnedReverse:false,createdAt:0})).filter(w=>w.en && w.ru);
           }
-          const known = new Set(words.map(w=>`${normalizeMatch(w.en)}\u0000${normalizeMatch(w.ru)}`));
+          const wordKey = item => `${normalizeMatch(item.en)}\u0000${normalizeMatch(item.ru)}`;
+          const existingByKey = new Map(words.map(w => [wordKey(w), w]));
+          const known = new Set(existingByKey.keys());
           const additions = [];
-          let nextCreatedAt = Math.max(Date.now(), ...words.map(w => Number(w.createdAt) || 0).map(value => value + 1));
+          const reordered = new Map();
+          const latestCreatedAt = words.reduce((latest, w) => Math.max(latest, Number(w.createdAt) || 0), 0);
+          const nextCreatedAt = Math.max(Date.now(), latestCreatedAt + 1);
+          const matchingTimes = isDashImport
+            ? incoming.map(item => existingByKey.get(wordKey(item))?.createdAt).filter(value => Number.isFinite(Number(value))).map(Number)
+            : [];
+          const orderBase = isDashImport
+            ? (matchingTimes.length ? Math.min(...matchingTimes) : nextCreatedAt)
+            : 0;
+          const orderedTime = index => orderBase + (index + 1) / (incoming.length + 1);
           let duplicates = 0;
-          for (const item of incoming) {
-            const key = `${normalizeMatch(item.en)}\u0000${normalizeMatch(item.ru)}`;
-            if (known.has(key)) { duplicates++; continue; }
+          for (let index = 0; index < incoming.length; index++) {
+            const item = incoming[index];
+            const key = wordKey(item);
+            if (known.has(key)) {
+              duplicates++;
+              const existing = existingByKey.get(key);
+              // For TXT, the file order can recover legacy cards whose creation timestamps tied.
+              // Keep each card's progress and update only its ordering timestamp.
+              if (isDashImport && existing && !reordered.has(existing.id)) {
+                reordered.set(existing.id, {...existing, createdAt: orderedTime(index)});
+              }
+              continue;
+            }
             known.add(key);
-            additions.push({...item, createdAt:Number(item.createdAt) || nextCreatedAt++, id:(crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), learned:Boolean(item.learned), learnedReverse:Boolean(item.learnedReverse)});
+            additions.push({...item, createdAt:isDashImport ? orderedTime(index) : (Number(item.createdAt) || nextCreatedAt++), id:(crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), learned:Boolean(item.learned), learnedReverse:Boolean(item.learnedReverse)});
           }
-          if (additions.length) {
+          if (additions.length || reordered.size) {
             const tx = db.transaction(STORE, 'readwrite');
             const done = transactionDone(tx);
             const store = tx.objectStore(STORE);
+            reordered.forEach(word => store.put(word));
             additions.forEach(word => store.put(word));
             await done;
+            words = words.map(word => reordered.get(word.id) || word);
             words.push(...additions);
           }
           renderWordList(); renderHome();
           const base = LANG === 'en'
-            ? `Imported ${additions.length}; skipped ${duplicates} duplicates${invalidLineCount ? `; ignored ${invalidLineCount} malformed line(s)` : ''}`
-            : `Импортировано: ${additions.length}; дубликатов пропущено: ${duplicates}${invalidLineCount ? `; строк без разделителя пропущено: ${invalidLineCount}` : ''}`;
+            ? `Imported ${additions.length}; skipped ${duplicates} duplicates${reordered.size ? `; order restored for ${reordered.size}` : ''}${invalidLineCount ? `; ignored ${invalidLineCount} malformed line(s)` : ''}`
+            : `Импортировано: ${additions.length}; дубликатов пропущено: ${duplicates}${reordered.size ? `; порядок восстановлен для ${reordered.size} карточек` : ''}${invalidLineCount ? `; строк без разделителя пропущено: ${invalidLineCount}` : ''}`;
           showToast(base);
         } catch (error) {
           showToast(LANG === 'en' ? `Could not import the file. Check its format and selected option. (${error.message})` : `Не удалось импортировать файл. Проверь формат и выбранный вариант. (${error.message})`);
