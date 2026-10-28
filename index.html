@@ -393,7 +393,7 @@
         'Повторить все слова':'Review all cards','На главную':'Home','Добавить слова':'Add cards','Сессия завершена':'Session complete','Хорошая работа.':'Good work.',
         'Карточки пройдены. Отметки сохранились на устройстве.':'You finished the cards. Your progress is saved on this device.',
         'выучено в подборке':'mastered in this set','ещё повторить':'to review','Продолжить учёбу':'Continue studying',
-        'Английский':'English','Русский':'Russian','English':'English','Нажми, чтобы увидеть перевод':'Tap to reveal the translation','Нажми, чтобы вернуться':'Tap to flip back',
+        'Английский':'English','Русский':'Russian','English':'English','Нажми, чтобы увидеть перевод':'Tap to reveal the translation','Нажми, чтобы вспомнить английское слово':'Tap to recall the English word','Нажми, чтобы вернуться':'Tap to flip back',
         'Ещё учу':'Still learning','Выучено':'Mastered','Выучено ✓':'Mastered ✓','учу':'learning','знаю':'mastered',
         'Нужны карточки':'No cards yet','Добавь несколько слов — и устроим им перекрёстный допрос.':'Add a few words and put them to the test.',
         'Тест завершён':'Quiz complete','Отличный результат.':'Excellent result.','Есть что повторить.':'More to review.','Вопросы шли в случайном порядке и в обоих направлениях.':'Questions were randomized and asked in both translation directions.',
@@ -593,7 +593,7 @@
           .map(w => w.id);
         studyIndex = 0; flipped = false;
         const heading = $('#screen-study .back-row .eyebrow');
-        if (heading) heading.textContent = reverse ? 'Обратное заучивание · RU → EN' : 'Заучивание · EN → RU';
+        if (heading) heading.textContent = translateText(reverse ? 'Обратное заучивание · RU → EN' : 'Заучивание · EN → RU');
         showScreen('study'); renderStudy();
       }
       function getStudyWords() { return studyQueue.map(id => words.find(w => w.id === id)).filter(Boolean); }
