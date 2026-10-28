@@ -569,6 +569,14 @@
       function streakData() {
         return { count: Number(localStorage.getItem('lexica-streak') || 0), last: localStorage.getItem('lexica-last-day') || '' };
       }
+      function applyQuizletStreakImport() {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('restoreQuizletStreak') !== '64') return;
+        localStorage.setItem('lexica-streak', '64');
+        localStorage.setItem('lexica-last-day', todayKey());
+        url.searchParams.delete('restoreQuizletStreak');
+        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+      }
       function recordStudyDay() {
         const today = todayKey();
         const data = streakData();
@@ -1373,6 +1381,8 @@
       async function init() {
         try {
           db = await openDb(); words = await readAllWords();
+          // One-time opt-in via URL lets the user carry their Quizlet streak into Lexica.
+          applyQuizletStreakImport();
           // Normalize records if an older local schema or partial edit left fields missing.
           words = words.filter(w => w && w.id && typeof w.en === 'string' && typeof w.ru === 'string').map(w => ({...w, learned: Boolean(w.learned), learnedReverse: Boolean(w.learnedReverse), createdAt: Number(w.createdAt)||Date.now()}));
           renderHome(); renderWordList(); localizeDom(document.body);
