@@ -5,12 +5,13 @@ Lexica is a mobile-first progressive web app (PWA) for studying English vocabula
 ## Features
 
 - **Two separate study directions:** English → Russian and Russian → English, each with independent progress.
+- **Study sessions:** cards are ordered from oldest to newest; session counters start at zero and reset for each new pass.
 - **Flashcards:** tap to flip, swipe left for “Still learning”, right for “Mastered”, previous-card control and session progress.
 - **Quiz mode:** randomized cards, translation prompts in either direction, multiple-choice answers and a score summary.
 - **Pronunciation:** audio from an unofficial Google Translate TTS endpoint, with device speech synthesis as fallback.
 - **Translation suggestions:** MyMemory, Google's unofficial Translate endpoint and public Lingva instances. Suggestions are optional; a translation can always be entered manually.
 - **Vocabulary management:** local IndexedDB storage, duplicate detection, card deletion, JSON backup/export, and import from JSON, CSV, TSV, pipe-delimited files or plain text.
-- **TXT import:** one card per line in the format `word or phrase - translation or phrase`. The separator is a hyphen surrounded by spaces, so hyphens inside terms such as `well-known` are not treated as separators. Multi-word expressions on either side are supported.
+- **TXT import:** one card per line in the format `word or phrase - translation or phrase`. The separator is a hyphen surrounded by spaces, so hyphens inside terms such as `well-known` are not treated as separators. Multi-word expressions on either side are supported. Re-importing a TXT list also restores its line order for matching existing cards without resetting their study progress.
 - **Merge review:** asks before removing exact duplicate cards, combining different translations for the same English term, or combining English terms that share the same Russian translation.
 - **Progress backup:** export vocabulary to JSON regularly. Importing a backup restores progress for both study directions.
 
