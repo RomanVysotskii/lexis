@@ -296,7 +296,7 @@
         <div class="import-content">
           <p class="subtext import-description">Столбцы: английское слово, перевод. JSON подходит для резервных копий Lexica.</p>
           <div class="field"><label for="import-file">Файл словаря</label><input type="file" id="import-file" accept=".csv,.tsv,.txt,.json,text/csv,text/tab-separated-values,application/json"></div>
-          <div class="field"><label>Формат файла</label><div class="format-options" id="import-format-options" role="radiogroup" aria-label="Формат импорта">
+          <div class="field"><label>Формат файла</label><div class="format-options" id="import-format-options" role="group" aria-label="Формат импорта">
             <button type="button" class="format-option is-selected" data-import-format="auto" aria-pressed="true">Автоопределение</button>
             <button type="button" class="format-option" data-import-format="dash" aria-pressed="false">TXT · слово - перевод</button>
             <button type="button" class="format-option" data-import-format="," aria-pressed="false">CSV · запятая</button>
@@ -309,7 +309,7 @@
           <p class="small-note">Дубликаты пропускаются. Исходный файл не изменяется.</p>
         </div>
       </details>
-      <div class="list-head"><h2>Карточки</h2><div class="list-head-actions"><span class="eyebrow" id="list-count">0</span><button class="merge-btn" type="button" id="merge-button">Найти повторы</button></div></div>
+      <div class="list-head"><h2>Карточки</h2><div class="list-head-actions"><span class="eyebrow" id="list-count">0</span><button class="merge-btn" type="button" id="merge-button">Найти и объединить</button></div></div>
       <div class="word-list" id="word-list"></div>
     </section>
 
@@ -410,7 +410,7 @@
         'Не удалось открыть локальное хранилище':'Could not open local storage','Открой приложение в современном браузере (Chrome, Safari или Firefox) и проверь, что для него разрешено хранение данных.':'Open the app in a modern browser (Chrome, Safari, or Firefox) and make sure storage is enabled.',
         'Экспорт слов':'Export vocabulary','Сбросить прогресс':'Reset progress','Обновление серии':'Streak updated','Импорт завершён':'Import complete',
         'Серия занятий':'Study streak','Источник':'Source','Google Translate':'Google Translate','MyMemory':'MyMemory','Lingva':'Lingva','Слушать произношение':'Listen to pronunciation','Слушать':'Listen',
-        'Заучивание · EN → RU':'Study · EN → RU','Обратное заучивание · RU → EN':'Reverse study · RU → EN','Английское слово — перевод на русский':'English word — Russian translation','Русское значение — вспомни английское слово':'Russian meaning — recall the English word','выучено в обоих направлениях':'mastered in both directions','Продолжить EN → RU · невыученные':'Continue EN → RU · unmastered','Продолжить RU → EN · невыученные':'Continue RU → EN · unmastered','Найти повторы':'Find duplicates','Формат файла':'File format','TXT · слово - перевод':'TXT · word - translation','CSV · запятая':'CSV · comma','CSV · точка с запятой':'CSV · semicolon','TSV · табуляция':'TSV · tab','Текст · вертикальная черта':'Text · pipe','Объединить':'Merge','Пропустить':'Skip','Точный повтор':'Exact duplicate','Одинаковое английское слово':'Same English term','Одинаковый перевод':'Same translation'
+        'Заучивание · EN → RU':'Study · EN → RU','Обратное заучивание · RU → EN':'Reverse study · RU → EN','Английское слово — перевод на русский':'English word — Russian translation','Русское значение — вспомни английское слово':'Russian meaning — recall the English word','выучено в обоих направлениях':'mastered in both directions','Продолжить EN → RU · невыученные':'Continue EN → RU · unmastered','Продолжить RU → EN · невыученные':'Continue RU → EN · unmastered','Найти повторы':'Find duplicates','Найти и объединить':'Find & merge','Формат файла':'File format','TXT · слово - перевод':'TXT · word - translation','CSV · запятая':'CSV · comma','CSV · точка с запятой':'CSV · semicolon','TSV · табуляция':'TSV · tab','Текст · вертикальная черта':'Text · pipe','Объединить':'Merge','Пропустить':'Skip','Точный повтор':'Exact duplicate','Одинаковое английское слово':'Same English term','Одинаковый перевод':'Same translation'
       };
       const EN_ATTR = {
         'Открыть меню':'Open menu','Меню':'Menu','Назад':'Back','Закрыть':'Close','Удалить':'Delete',
@@ -1092,9 +1092,13 @@
         if (!candidate) {
           mergeInProgress = false;
           renderWordList(); renderHome();
-          showToast(LANG === 'en'
-            ? `Review complete: merged ${mergeStats.merged}; skipped ${mergeStats.skipped}.`
-            : `Проверка завершена: объединено ${mergeStats.merged}; пропущено ${mergeStats.skipped}.`);
+          if (!mergeStats.merged && !mergeStats.skipped) {
+            showToast(LANG === 'en' ? 'No duplicate or merge candidates found.' : 'Повторов и кандидатов на объединение не найдено.');
+          } else {
+            showToast(LANG === 'en'
+              ? `Review complete: merged ${mergeStats.merged}; skipped ${mergeStats.skipped}.`
+              : `Проверка завершена: объединено ${mergeStats.merged}; пропущено ${mergeStats.skipped}.`);
+          }
           return;
         }
         const prompt = mergePrompt(candidate);
