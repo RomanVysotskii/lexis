@@ -5,7 +5,7 @@ Lexica is a mobile-first progressive web app (PWA) for studying English vocabula
 ## Features
 
 - **Two separate study directions:** English → Russian and Russian → English, each with independent progress.
-- **Study sessions:** cards are ordered from oldest to newest; unfinished sessions restore the current card and counters after closing/reopening the app, while a new pass starts fresh.
+- **Study sessions:** the first pass includes the full deck; after any cards are marked mastered, a new pass from the home screen includes only unmastered cards in that direction. Unfinished sessions restore the current card and counters after closing/reopening the app. EN → RU and RU → EN progress are independent.
 - **Flashcards:** tap to flip, swipe left for “Still learning”, right for “Mastered”, previous-card control and session progress.
 - **Quiz mode:** randomized English ↔ Russian multiple-choice questions. Correct answers enter the “mastered” counter, incorrect answers enter “still learning”; a card is not asked again until quiz results are reset, but it can still appear as a distractor.
 - **Pronunciation:** audio from an unofficial Google Translate TTS endpoint, with device speech synthesis as fallback.
