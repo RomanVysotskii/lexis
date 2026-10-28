@@ -1,46 +1,48 @@
-# Lexica v0.4 — offline-first vocabulary cards
+# Lexica — offline-first vocabulary cards
 
-Lexica is a local-first English/Russian flashcard app. The repository contains a mobile-first PWA and an Android Studio wrapper with a native Samsung/Android home-screen streak widget.
+Lexica is a mobile-first progressive web app (PWA) for studying English vocabulary in Russian. It works without an account and stores cards locally in the browser.
 
 ## Features
 
-- **System theme:** follows the device/browser light/dark setting.
-- **System language:** English UI on English-language devices; Russian fallback otherwise. Reload the app after changing the system language.
-- **Study mode:** sequential cards, tap to flip, swipe left for “Still learning”, right for “Mastered”, drag-follow animation, previous-card button, progress count.
-- **Quiz mode:** randomized cards, questions in either translation direction, multiple-choice answers and score summary.
-- **Translation suggestions:** combines MyMemory and Google's unofficial Translate endpoint with a Lingva public-instance fallback pool. Suggested translations are displayed below the input; the input remains blank until a suggestion is tapped. Manual translation is always available.
-- **Pronunciation:** speaker button streams audio from an unofficial Google Translate TTS endpoint; built-in device speech synthesis is used as fallback. Audio is not intentionally saved as a file.
-- **Vocabulary management:** local IndexedDB storage, duplicate detection, delete, JSON backup export, CSV/TSV/text/JSON import. CSV-like files support auto or explicit comma, semicolon, tab and pipe delimiters, plus header detection.
-- **Study streak:** tracks calendar days with at least one study/test answer. The native Android home-screen widget shows the streak on Samsung One UI and other Android launchers.
-- **Progress actions:** continue with only unmastered cards or reset learned flags after confirmation; cards themselves are kept.
+- **Two separate study directions:** English → Russian and Russian → English, each with independent progress.
+- **Flashcards:** tap to flip, swipe left for “Still learning”, right for “Mastered”, previous-card control and session progress.
+- **Quiz mode:** randomized cards, translation prompts in either direction, multiple-choice answers and a score summary.
+- **Pronunciation:** audio from an unofficial Google Translate TTS endpoint, with device speech synthesis as fallback.
+- **Translation suggestions:** MyMemory, Google's unofficial Translate endpoint and public Lingva instances. Suggestions are optional; a translation can always be entered manually.
+- **Vocabulary management:** local IndexedDB storage, duplicate detection, card deletion, JSON backup/export, and import from JSON, CSV, TSV, pipe-delimited files or plain text.
+- **TXT import:** one card per line in the format `word or phrase - translation or phrase`. The separator is a hyphen surrounded by spaces, so hyphens inside terms such as `well-known` are not treated as separators. Multi-word expressions on either side are supported.
+- **Merge review:** asks before removing exact duplicate cards, combining different translations for the same English term, or combining English terms that share the same Russian translation.
+- **Progress backup:** export vocabulary to JSON regularly. Importing a backup restores progress for both study directions.
 
 ## Try the PWA
 
-Serve the project root via HTTPS (GitHub Pages is supported) and open the resulting URL in Chrome on Android. Choose **Add to Home screen**. Opening `index.html` as a local file is useful for a quick desktop look, but service workers and PWA installation require HTTPS or localhost.
-
-Card data stays in browser IndexedDB and is not uploaded to a Lexica server. When you request suggestions, the entered term is sent to external translation providers. Browser cleanup can delete local cards, so export JSON backups regularly.
+Serve the project root via HTTPS (GitHub Pages is supported) and open the resulting URL in Chrome on Android or another modern browser. Choose **Add to Home screen** on supported devices. Opening `index.html` as a local file is useful for a quick desktop look, but PWA installation and service workers require HTTPS or localhost.
 
 ## Deploy to GitHub Pages
 
-A workflow is included at `.github/workflows/pages.yml`. Push the files to the repository's `main` branch, then open **Settings → Pages** and set the build/deployment source to **GitHub Actions** (one-time setup). Subsequent pushes deploy the PWA automatically. A second workflow builds the Android debug APK and attaches it as a GitHub Actions artifact; after a successful run, download `lexica-debug-apk` from the workflow run page. The Pages workflow publishes only `index.html`, `manifest.webmanifest`, `sw.js` and `icon.svg`.
+1. Open the repository on GitHub and go to **Settings → Pages**.
+2. Under **Build and deployment**, choose **Deploy from a branch**.
+3. Select branch `main` and folder `/ (root)`, then save.
+4. Wait for GitHub Pages to publish the site, then open the URL shown on the Pages settings screen.
 
-## Build the Android wrapper and widget
+The app uses relative asset paths so it can also be deployed under a repository subpath.
 
-1. Open `android-widget/` in a current Android Studio release. Install Android SDK 36 and use JDK 17 or newer.
-2. Let Gradle sync, then run the `app` configuration on a device or emulator. This environment does not include the Android SDK, so a prebuilt APK is not included.
-3. On the Samsung phone, long-press an empty home-screen area → **Widgets** → **Lexica** → add **Study streak**. One UI may place the widget under the app-name group.
-4. If importing cards from the PWA, open the web app's menu → export vocabulary, then import that JSON file in the Android app. PWA browser storage and Android WebView storage are separate; JSON backup is the transfer path.
+## Data and privacy
 
-The native widget reads only the streak count/date from Android `SharedPreferences`. Vocabulary is stored in the WebView's local IndexedDB. The widget opens Lexica when tapped.
+Vocabulary cards and study progress are stored in the browser's local IndexedDB on that device. Lexica does not upload the vocabulary database to a Lexica server. Browser/site data cleanup can erase local cards, so export JSON backups regularly.
 
-## Import format
+When you request translation suggestions, the entered term is sent to third-party translation providers. Pronunciation may also contact Google's unofficial text-to-speech endpoint. These services can fail, be rate-limited, or change without notice; manually entered translations and device speech synthesis remain available as fallbacks.
 
-Delimited import expects two columns: English word/phrase, Russian translation. CSV quotes and escaped double quotes are supported. Choose the file, select a delimiter or auto-detect it, set whether the first row contains headers, then import. JSON files exported by Lexica are also accepted. Duplicate word+translation pairs are skipped.
+## Import formats
 
-## Important limitations
+- **TXT:** `English word or phrase - Russian translation or phrase`, one card per line.
+- **CSV:** comma-delimited, or semicolon-delimited.
+- **TSV:** tab-delimited.
+- **Pipe-delimited text:** fields separated by `|`.
+- **JSON:** a Lexica backup exported by the app, or a JSON array/object with a `words` array. Each record needs an English field (`en`, `english`, or `word`) and a Russian translation field (`ru`, `translation`, or `meaning`).
 
-- Translation providers are third-party and may fail due to CORS, rate limits, downtime or API changes. Google Translate's browser endpoint and TTS endpoint are unofficial and have no service guarantee; public Lingva instances are also unstable.
-- Browser speech synthesis depends on the speech voices installed on the device.
-- The Android widget refreshes when the app sends an updated streak, plus its normal periodic refresh; after long periods without opening the app, its last-known date is checked against the current day.
-- The Android Studio project is source code only; no APK has been built or tested on a physical Samsung device in this environment. The included GitHub Actions workflow is set up to build a debug APK after you push the project to GitHub.
-- ChatGPT's standard GitHub connector is read-only; direct file commits/pushes require a write-capable coding workflow such as Codex. The project includes a Pages workflow so deployment is automatic once the files are in your repository.
+The delimited formats use the first two columns for English and Russian. Select whether the first row contains headers when importing. Duplicate English–Russian pairs are skipped.
+
+## Technical notes
+
+The project is a self-contained PWA in `index.html`, with `manifest.webmanifest`, `sw.js` and `icon.svg`. There is no backend, build step, or native Android wrapper in the current project.
