@@ -592,6 +592,8 @@
           .sort((a,b) => (Number(a.createdAt)||0) - (Number(b.createdAt)||0) || String(a.en).localeCompare(String(b.en)))
           .map(w => w.id);
         studyIndex = 0; flipped = false;
+        const heading = $('#screen-study .back-row .eyebrow');
+        if (heading) heading.textContent = reverse ? 'Обратное заучивание · RU → EN' : 'Заучивание · EN → RU';
         showScreen('study'); renderStudy();
       }
       function getStudyWords() { return studyQueue.map(id => words.find(w => w.id === id)).filter(Boolean); }
@@ -600,7 +602,7 @@
         const queue = getStudyWords();
         if (!queue.length) {
           body.innerHTML = `<div class="completion"><div class="completion-mark">${words.length ? '✓' : '＋'}</div><h1>${words.length ? 'Всё выучено!' : 'Сначала добавим слова'}</h1><p class="subtext">${words.length ? 'В этой подборке больше нет невыученных карточек. Можно сбросить прогресс или повторить весь словарь.' : 'Без карточек тут как на экзамене без билетов.'}</p><div class="button-stack"><button class="primary" id="completion-continue">${words.length ? 'Повторить все слова' : 'Добавить слова'}</button>${words.length ? '<button class="secondary" id="completion-home">На главную</button>' : ''}</div></div>`;
-          $('#completion-continue').addEventListener('click', () => words.length ? startStudy(false) : showScreen('add'));
+          $('#completion-continue').addEventListener('click', () => words.length ? startStudy(false, studyReverse) : showScreen('add'));
           $('#completion-home')?.addEventListener('click', () => showScreen('home'));
           localizeDom(body);
           return;
@@ -609,7 +611,7 @@
           const learnedInQueue = queue.filter(w => studyReverse ? w.learnedReverse : w.learned).length;
           const pending = queue.length - learnedInQueue;
           body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Карточки пройдены. Отметки сохранились на устройстве.</p><div class="completion-stats"><div><strong>${learnedInQueue}</strong><span>выучено в подборке</span></div><div><strong>${pending}</strong><span>ещё повторить</span></div></div><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Продолжить учёбу</button>' : '<button class="primary" id="completion-continue">Повторить все слова</button>'}<button class="secondary" id="completion-home">На главную</button></div></div>`;
-          $('#completion-continue').addEventListener('click', () => pending ? startStudy(true) : startStudy(false));
+          $('#completion-continue').addEventListener('click', () => pending ? startStudy(true, studyReverse) : startStudy(false, studyReverse));
           $('#completion-home').addEventListener('click', () => showScreen('home'));
           localizeDom(body);
           return;
