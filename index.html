@@ -247,6 +247,44 @@
       .speak-btn { box-shadow: none; }
     }
 
+
+    /* Responsive vocabulary rows: text wraps while actions remain pinned to the right edge. */
+    .word-row { min-width: 0; align-items: flex-start; gap: 8px; padding: 12px; }
+    .word-row-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .word-row-main strong, .word-row-main span { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; word-break: normal; }
+    .word-row-main strong { line-height: 1.35; }
+    .word-row-main span { line-height: 1.45; }
+    .word-row-actions { display: flex; flex: 0 0 auto; align-items: center; align-self: flex-start; gap: 1px; margin-left: auto; }
+    .edit-btn, .delete-btn { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; background: transparent; border-radius: 11px; }
+    .edit-btn { color: var(--muted); }
+    .edit-btn:hover { background: var(--green-pale); color: var(--green-dark); }
+    .edit-btn svg, .delete-btn svg { width: 18px; height: 18px; }
+    .word-row.is-editing { align-items: flex-start; }
+    .word-row-editor { display: grid; flex: 1 1 auto; min-width: 0; gap: 10px; }
+    .word-row-editor label { display: grid; min-width: 0; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 750; }
+    .word-row-editor input { display: block; width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--field-bg); border-radius: 10px; padding: 10px; color: var(--ink); font: inherit; font-size: 13px; }
+    .word-row-edit-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .word-row-edit-actions button { min-height: 38px; border-radius: 11px; padding: 9px 12px; font-size: 12px; }
+    .list-head { align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+    .list-head-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; margin-left: auto; min-width: 0; }
+    .sort-btn { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 11px; background: var(--field-bg); color: var(--ink); font-size: 12px; font-weight: 750; }
+    .sort-btn svg { width: 15px; height: 15px; }
+    .sort-btn[aria-expanded="true"] { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); }
+    .sort-panel { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 11px 12px; margin: -1px 0 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 13px; }
+    .sort-panel[hidden] { display: none; }
+    .sort-label { font-size: 12px; font-weight: 750; color: var(--muted); }
+    .sort-select { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; background: var(--field-bg); color: var(--ink); font: inherit; font-size: 12px; }
+    .import-header-field .format-heading { margin-bottom: 0; }
+    .import-header-field .import-header-select { width: auto; max-width: 68%; min-width: 0; padding: 8px 10px; appearance: auto; cursor: pointer; }
+    @media (max-width: 390px) {
+      .list-head-actions { gap: 5px; }
+      .merge-btn { padding-inline: 8px; font-size: 11px; }
+      .sort-btn { padding-inline: 7px; }
+      .sort-panel { grid-template-columns: 1fr; gap: 6px; }
+      .word-row { gap: 7px; padding: 10px; }
+      .word-row-actions { gap: 0; }
+      .edit-btn, .delete-btn { flex-basis: 30px; width: 30px; height: 32px; }
+    }
   </style>
 </head>
 <body>
@@ -315,12 +353,13 @@
               <button type="button" class="format-option" data-import-format="|" aria-pressed="false">Текст · вертикальная черта</button>
             </div>
           </div>
-          <div class="field"><label for="import-header">Первая строка</label><select id="import-header"><option value="auto">Автоопределение</option><option value="yes">Заголовки столбцов</option><option value="no">Это карточка</option></select></div>
+          <div class="field import-header-field"><div class="format-heading"><label class="format-heading-title" for="import-header">Первая строка</label><select id="import-header" class="format-auto import-header-select"><option value="auto">Автоопределение</option><option value="yes">Заголовки столбцов</option><option value="no">Это карточка</option></select></div></div>
           <button class="secondary" type="button" id="import-button" style="width:100%">Импортировать</button>
           <p class="small-note">Дубликаты пропускаются. Исходный файл не изменяется.</p>
         </div>
       </details>
-      <div class="list-head"><h2>Карточки</h2><div class="list-head-actions"><span class="eyebrow" id="list-count">0</span><button class="merge-btn" type="button" id="merge-button">Найти и объединить</button></div></div>
+      <div class="list-head"><h2>Карточки</h2><div class="list-head-actions"><span class="eyebrow" id="list-count">0</span><button class="sort-btn" type="button" id="sort-toggle" aria-expanded="false" aria-controls="sort-panel">${iconFilter}<span>Фильтр</span></button><button class="merge-btn" type="button" id="merge-button">Найти и объединить</button></div></div>
+      <div class="sort-panel" id="sort-panel" hidden><label class="sort-label" for="word-sort">Сортировка</label><select id="word-sort" class="sort-select"><option value="recent">Недавно добавленные</option><option value="oldest">Давно добавленные</option><option value="ru-asc">Русский алфавит: А → Я</option><option value="ru-desc">Русский алфавит: Я → А</option><option value="en-asc">Английский алфавит: A → Z</option><option value="en-desc">Английский алфавит: Z → A</option></select></div>
       <div class="word-list" id="word-list"></div>
     </section>
 
@@ -351,6 +390,9 @@
       let studyReverse = false;
       let studyResults = new Map();
       let selectedImportFormat = 'auto';
+      let wordSort = 'recent';
+      let sortPanelOpen = false;
+      let editingWordId = null;
       let mergeInProgress = false;
       let mergeReviewed = new Set();
       let mergeStats = { merged: 0, skipped: 0 };
@@ -369,6 +411,8 @@
       const $ = (selector) => document.querySelector(selector);
       const esc = (value) => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
       const iconTrash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>';
+      const iconPencil = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14 5 5 5M4 20l4.2-.9L19 8.3a2.1 2.1 0 0 0-3-3L5.2 16.1 4 20Z"/></svg>';
+      const iconFilter = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10m-7 6h4"/></svg>';
       const iconBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 18-6-6 6-6"/></svg>';
       const LANG = ((navigator.languages && navigator.languages[0]) || navigator.language || 'ru').toLowerCase().startsWith('en') ? 'en' : 'ru';
       document.documentElement.lang = LANG;
@@ -392,7 +436,7 @@
         'Слово или фраза на английском':'English word or phrase','Перевод на русский':'Translation into Russian','например, resilience':'e.g. resilience','например, устойчивость':'e.g. resilience',
         'Подобрать':'Find translations','Варианты перевода · выбери подходящий':'Translation suggestions · choose one','Добавить слово':'Add word','И ещё':'Add another',
         'Словарь хранится на этом устройстве. Для подбора перевода нужен интернет.':'Your vocabulary stays on this device. Translation suggestions require internet access.',
-        'Карточки':'Cards','Импорт карточек (CSV / TSV / JSON)':'Import cards (CSV / TSV / JSON)',
+        'Карточки':'Cards','Фильтр':'Filter','Сортировка':'Sort by','Недавно добавленные':'Recently added','Давно добавленные':'Oldest first','Русский алфавит: А → Я':'Russian alphabet: А → Я','Русский алфавит: Я → А':'Russian alphabet: Я → А','Английский алфавит: A → Z':'English alphabet: A → Z','Английский алфавит: Z → A':'English alphabet: Z → A','Английское слово':'English word','Сохранить изменения':'Save changes','Редактировать':'Edit','Изменения сохранены':'Changes saved','Заполни оба поля':'Fill in both fields','Не удалось сохранить изменения. Попробуй ещё раз.':'Could not save changes. Please try again.','Импорт карточек (CSV / TSV / JSON)':'Import cards (CSV / TSV / JSON)',
         'Столбцы: английское слово, перевод. JSON подходит для резервных копий Lexica.':'Columns: English word, translation. JSON also supports Lexica backups.',
         'Файл словаря':'Vocabulary file','Разделитель':'Delimiter','Автоопределение':'Auto-detect','Запятая (,)':'Comma (,)','Точка с запятой (;)':'Semicolon (;)','Табуляция (TAB)':'Tab (TAB)','Вертикальная черта (|)':'Pipe (|)',
         'Первая строка':'First row','Заголовки столбцов':'Column headers','Это карточка':'This is a card','Импортировать':'Import',
@@ -426,7 +470,7 @@
       };
       const EN_ATTR = {
         'Открыть меню':'Open menu','Меню':'Menu','Назад':'Back','Закрыть':'Close','Удалить':'Delete',
-        'Добавить слова':'Add cards','Предыдущее слово':'Previous word','Перевернуть карточку':'Flip card',
+        'Добавить слова':'Add cards','Предыдущее слово':'Previous word','Перевернуть карточку':'Flip card','Редактировать карточку':'Edit card','Сохранить изменения':'Save changes','Слово или фраза на английском':'English word or phrase','Перевод на русский':'Translation into Russian','Редактировать':'Edit','Удалить':'Delete',
         'Слово или фраза на английском':'English word or phrase','Перевод на русский':'Translation into Russian',
         'например, resilience':'e.g. resilience','например, устойчивость':'e.g. устойчивость',
         'Слушать произношение':'Listen to pronunciation','Слушать':'Listen'
@@ -600,20 +644,81 @@
       function renderWordList() {
         $('#add-total').textContent = `${words.length} ${pluralWords(words.length)}`;
         $('#list-count').textContent = words.length;
+        $('#sort-panel').hidden = !sortPanelOpen;
+        $('#sort-toggle').setAttribute('aria-expanded', String(sortPanelOpen));
+        $('#word-sort').value = wordSort;
         const list = $('#word-list');
         if (!words.length) {
           list.innerHTML = '<div class="empty-state"><div class="empty-icon">＋</div><h2>Пока пусто</h2><p>Добавь первое слово — оно останется здесь, даже если закрыть приложение.</p></div>';
           localizeDom($('#screen-add'));
           return;
         }
-        list.innerHTML = [...words].sort((a,b) => b.createdAt-a.createdAt).map(word => `<div class="word-row"><span class="learned-marks" aria-label="Прогресс заучивания"><span class="learned-mark ${word.learned ? 'is-learned' : ''}" title="EN → RU"></span><span class="learned-mark ${word.learnedReverse ? 'is-learned' : ''}" title="RU → EN"></span></span><div class="word-row-main"><strong>${esc(word.en)}</strong><span>${esc(word.ru)}</span></div><button class="delete-btn" data-delete="${esc(word.id)}" aria-label="Удалить ${esc(word.en)}">${iconTrash}</button></div>`).join('');
+
+        const ruCollator = new Intl.Collator('ru', { sensitivity: 'base', numeric: true });
+        const enCollator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
+        const sorted = [...words].sort((a, b) => {
+          if (wordSort === 'ru-asc') return ruCollator.compare(a.ru, b.ru) || ruCollator.compare(a.en, b.en);
+          if (wordSort === 'ru-desc') return ruCollator.compare(b.ru, a.ru) || ruCollator.compare(b.en, a.en);
+          if (wordSort === 'en-asc') return enCollator.compare(a.en, b.en) || enCollator.compare(a.ru, b.ru);
+          if (wordSort === 'en-desc') return enCollator.compare(b.en, a.en) || enCollator.compare(b.ru, a.ru);
+          if (wordSort === 'oldest') return (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0);
+          return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+        });
+
+        list.innerHTML = sorted.map(word => {
+          const marks = `<span class="learned-marks" aria-label="Прогресс заучивания"><span class="learned-mark ${word.learned ? 'is-learned' : ''}" title="EN → RU"></span><span class="learned-mark ${word.learnedReverse ? 'is-learned' : ''}" title="RU → EN"></span></span>`;
+          if (editingWordId === word.id) {
+            return `<div class="word-row is-editing">${marks}<form class="word-row-editor" data-edit-form="${esc(word.id)}"><label>Английское слово<input data-edit-en value="${esc(word.en)}" maxlength="160" required autocomplete="off" aria-label="Слово или фраза на английском"></label><label>Перевод<input data-edit-ru value="${esc(word.ru)}" maxlength="240" required autocomplete="off" aria-label="Перевод на русский"></label><div class="word-row-edit-actions"><button class="primary" type="submit">Сохранить изменения</button><button class="secondary" type="button" data-edit-cancel>Отмена</button></div></form></div>`;
+          }
+          return `<div class="word-row">${marks}<div class="word-row-main"><strong>${esc(word.en)}</strong><span>${esc(word.ru)}</span></div><div class="word-row-actions"><button class="edit-btn" type="button" data-edit="${esc(word.id)}" aria-label="Редактировать карточку" title="Редактировать">${iconPencil}</button><button class="delete-btn" type="button" data-delete="${esc(word.id)}" aria-label="Удалить ${esc(word.en)}" title="Удалить">${iconTrash}</button></div></div>`;
+        }).join('');
+
         localizeDom($('#screen-add'));
+        list.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => {
+          editingWordId = button.dataset.edit;
+          renderWordList();
+          list.querySelector('[data-edit-en]')?.focus();
+        }));
+        list.querySelectorAll('[data-edit-cancel]').forEach(button => button.addEventListener('click', () => {
+          editingWordId = null;
+          renderWordList();
+        }));
+        list.querySelectorAll('[data-edit-form]').forEach(form => form.addEventListener('submit', async event => {
+          event.preventDefault();
+          const word = words.find(item => item.id === form.dataset.editForm);
+          if (!word) { editingWordId = null; renderWordList(); return; }
+          const en = form.querySelector('[data-edit-en]').value.trim();
+          const ru = form.querySelector('[data-edit-ru]').value.trim();
+          if (!en || !ru) {
+            showToast('Заполни оба поля');
+            (!en ? form.querySelector('[data-edit-en]') : form.querySelector('[data-edit-ru]')).focus();
+            return;
+          }
+          const duplicate = words.some(item => item.id !== word.id &&
+            normalizeMatch(item.en) === normalizeMatch(en) && normalizeMatch(item.ru) === normalizeMatch(ru));
+          if (duplicate) {
+            showToast('Такая карточка уже есть');
+            return;
+          }
+          const updated = { ...word, en, ru };
+          try {
+            await putWord(updated);
+            words = words.map(item => item.id === word.id ? updated : item);
+            editingWordId = null;
+            renderWordList();
+            renderHome();
+            showToast('Изменения сохранены');
+          } catch (error) {
+            showToast('Не удалось сохранить изменения. Попробуй ещё раз.');
+          }
+        }));
         list.querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', () => {
           const word = words.find(w => w.id === button.dataset.delete);
           if (!word) return;
           openModal('Удалить карточку?', `«${word.en}» будет удалено из словаря. Это действие нельзя отменить.`, 'Удалить', async () => {
             await deleteWord(word.id);
             words = words.filter(w => w.id !== word.id);
+            if (editingWordId === word.id) editingWordId = null;
             renderWordList(); renderHome(); showToast('Карточка удалена');
           });
         }));
@@ -1246,6 +1351,14 @@
       $('#import-button').addEventListener('click', importVocabulary);
       document.querySelectorAll('[data-import-format]').forEach(button => button.addEventListener('click', () => updateImportFormat(button.dataset.importFormat)));
       $('#merge-button').addEventListener('click', startMergeReview);
+      $('#sort-toggle').addEventListener('click', () => {
+        sortPanelOpen = !sortPanelOpen;
+        renderWordList();
+      });
+      $('#word-sort').addEventListener('change', () => {
+        wordSort = $('#word-sort').value;
+        renderWordList();
+      });
       $('#word-input').addEventListener('input', () => { chosenSuggestion = ''; $('#translation-input').value = ''; $('#suggestions').classList.remove('visible'); });
       $('#translation-input').addEventListener('input', () => { chosenSuggestion = ''; });
       $('#menu-button').addEventListener('click', handleMenu);
