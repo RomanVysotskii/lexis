@@ -493,11 +493,11 @@
         tx.objectStore(STORE).delete(id);
         await done;
       }
-      async function saveAll() {
+      async function saveAll(wordsToSave = words) {
         const tx = db.transaction(STORE, 'readwrite');
         const done = transactionDone(tx);
         const store = tx.objectStore(STORE);
-        words.forEach(word => store.put(word));
+        wordsToSave.forEach(word => store.put(word));
         await done;
       }
       const todayKey = () => {
@@ -696,8 +696,12 @@
         const queue = getStudyWords();
         const word = queue[studyIndex];
         if (!word) return;
-        if (studyReverse) word.learnedReverse = isLearned; else word.learned = isLearned;
-        await putWord(word); recordStudyDay();
+        const updated = {...word};
+        if (studyReverse) updated.learnedReverse = isLearned; else updated.learned = isLearned;
+        try { await putWord(updated); }
+        catch (error) { showToast(LANG === 'en' ? 'Could not save study progress. Try again.' : 'Не удалось сохранить прогресс. Попробуй ещё раз.'); return; }
+        Object.assign(word, updated);
+        recordStudyDay();
         if (studyIndex < queue.length-1) { studyIndex++; flipped = false; renderStudy(); }
         else { studyIndex++; renderStudy(); }
       }
@@ -1132,8 +1136,10 @@
           : `Карточек: ${words.length}. Выучено в обоих направлениях: ${masteredBoth}.\n\nВыбери направление для продолжения, сбрось прогресс или экспортируй резервную копию.`;
         openModal('Меню словаря', message, LANG === 'en' ? 'Reset progress' : 'Сбросить прогресс', async () => {
           openModal('Сбросить прогресс?', 'Все карточки останутся в словаре, но снова станут невыученными в обоих направлениях. Это действие нельзя отменить.', 'Да, сбросить', async () => {
-            words.forEach(w => { w.learned = false; w.learnedReverse = false; });
-            await saveAll(); renderHome(); renderWordList(); showToast('Прогресс сброшен');
+            const resetWords = words.map(w => ({...w, learned:false, learnedReverse:false}));
+            await saveAll(resetWords);
+            words = resetWords;
+            renderHome(); renderWordList(); showToast('Прогресс сброшен');
           });
         });
         $('#modal-cancel').textContent = LANG === 'en' ? 'Close' : 'Закрыть';
