@@ -71,7 +71,7 @@
     .mode-copy strong { display: block; font-size: 15px; margin-bottom: 4px; }
     .mode-copy span { display: block; color: var(--muted); font-size: 12px; line-height: 1.35; }
     .mode-arrow { color: #9aa49a; font-size: 24px; }
-    .home-footer { margin-top: auto; padding-top: 24px; display: flex; justify-content: center; }
+    .home-footer { margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .text-btn { border: 0; background: none; color: var(--muted); font-size: 13px; padding: 10px; }
     .text-btn:hover { color: var(--red); }
     .back-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
@@ -132,7 +132,18 @@
     .word-row-main strong, .word-row-main span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .word-row-main strong { font-size: 14px; }
     .word-row-main span { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .learned-mark { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: 0 0 auto; }
+    .learned-marks { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; padding: 2px 0; }
+    .learned-mark { width: 7px; height: 7px; border-radius: 50%; background: #e2b15e; }
+    .learned-mark.is-learned { background: var(--green); }
+    .list-head { align-items: center; }
+    .list-head-actions { display: flex; align-items: center; gap: 8px; }
+    .merge-btn { min-height: 36px; padding: 8px 11px; border: 1px solid #cce4ce; background: var(--green-pale); color: var(--green-dark); border-radius: 11px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+    .merge-btn:active { transform: scale(.98); }
+    .format-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .format-option { min-width: 0; min-height: 42px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--field-bg); color: var(--ink); font-size: 12px; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
+    .format-option[data-import-format="dash"] { grid-column: 1 / -1; }
+    .format-option.is-selected { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); box-shadow: inset 0 0 0 1px var(--green); }
+    .format-option:focus-visible { outline: 3px solid rgba(112,183,126,.45); outline-offset: 2px; }
     .delete-btn { border: 0; color: var(--red); background: transparent; width: 37px; height: 37px; border-radius: 12px; display: grid; place-items: center; }
     .delete-btn:hover { background: var(--red-pale); }
     .delete-btn svg { width: 19px; height: 19px; }
@@ -254,14 +265,15 @@
       </div>
       <div class="stats-row">
         <div class="stat"><strong id="total-count">0</strong><span>слов в словаре</span></div>
-        <div class="stat"><strong id="mastered-count">0</strong><span>уже выучено</span></div>
+        <div class="stat"><strong id="mastered-count">0</strong><span>выучено в обоих направлениях</span></div>
       </div>
       <div class="section-label"><h2>Что будем делать?</h2><span class="eyebrow" id="home-progress-label"></span></div>
       <div class="mode-list">
-        <button class="mode" id="start-study"><span class="mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5v-12Z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h7M8 10h5"/></svg></span><span class="mode-copy"><strong>Заучивание</strong><span>Карточки по порядку — переворачивай и оценивай себя</span></span><span class="mode-arrow">›</span></button>
+        <button class="mode" id="start-study"><span class="mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5v-12Z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h7M8 10h5"/></svg></span><span class="mode-copy"><strong>Заучивание · EN → RU</strong><span>Английское слово — перевод на русский</span></span><span class="mode-arrow">›</span></button>
+        <button class="mode" id="start-study-reverse"><span class="mode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3M17 7l3 3-3 3M7 17l-3-3 3-3"/></svg></span><span class="mode-copy"><strong>Обратное заучивание · RU → EN</strong><span>Русское значение — вспомни английское слово</span></span><span class="mode-arrow">›</span></button>
         <button class="mode" id="start-quiz"><span class="mode-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="4" rx="1.5"/><path d="m7 12 2 2 4-4M7 17h10"/></svg></span><span class="mode-copy"><strong>Тест</strong><span>Случайные вопросы, направления перевода и варианты ответа</span></span><span class="mode-arrow">›</span></button>
       </div>
-      <div class="home-footer"><button class="text-btn" id="continue-study" hidden>Продолжить учёбу · только невыученные</button></div>
+      <div class="home-footer"><button class="text-btn" id="continue-study-forward" hidden>Продолжить EN → RU · невыученные</button><button class="text-btn" id="continue-study-reverse" hidden>Продолжить RU → EN · невыученные</button></div>
     </section>
 
     <section class="screen" id="screen-study">
@@ -284,15 +296,20 @@
         <div class="import-content">
           <p class="subtext import-description">Столбцы: английское слово, перевод. JSON подходит для резервных копий Lexica.</p>
           <div class="field"><label for="import-file">Файл словаря</label><input type="file" id="import-file" accept=".csv,.tsv,.txt,.json,text/csv,text/tab-separated-values,application/json"></div>
-          <div class="import-grid">
-            <div class="field"><label for="import-delimiter">Разделитель</label><select id="import-delimiter"><option value="auto">Автоопределение</option><option value=",">Запятая (,)</option><option value=";">Точка с запятой (;)</option><option value="tab">Табуляция (TAB)</option><option value="|">Вертикальная черта (|)</option></select></div>
-            <div class="field"><label for="import-header">Первая строка</label><select id="import-header"><option value="auto">Автоопределение</option><option value="yes">Заголовки столбцов</option><option value="no">Это карточка</option></select></div>
-          </div>
+          <div class="field"><label>Формат файла</label><div class="format-options" id="import-format-options" role="radiogroup" aria-label="Формат импорта">
+            <button type="button" class="format-option is-selected" data-import-format="auto" aria-pressed="true">Автоопределение</button>
+            <button type="button" class="format-option" data-import-format="dash" aria-pressed="false">TXT · слово - перевод</button>
+            <button type="button" class="format-option" data-import-format="," aria-pressed="false">CSV · запятая</button>
+            <button type="button" class="format-option" data-import-format=";" aria-pressed="false">CSV · точка с запятой</button>
+            <button type="button" class="format-option" data-import-format="tab" aria-pressed="false">TSV · табуляция</button>
+            <button type="button" class="format-option" data-import-format="|" aria-pressed="false">Текст · вертикальная черта</button>
+          </div></div>
+          <div class="field"><label for="import-header">Первая строка</label><select id="import-header"><option value="auto">Автоопределение</option><option value="yes">Заголовки столбцов</option><option value="no">Это карточка</option></select></div>
           <button class="secondary" type="button" id="import-button" style="width:100%">Импортировать</button>
           <p class="small-note">Дубликаты пропускаются. Исходный файл не изменяется.</p>
         </div>
       </details>
-      <div class="list-head"><h2>Карточки</h2><span class="eyebrow" id="list-count">0</span></div>
+      <div class="list-head"><h2>Карточки</h2><div class="list-head-actions"><span class="eyebrow" id="list-count">0</span><button class="merge-btn" type="button" id="merge-button">Найти повторы</button></div></div>
       <div class="word-list" id="word-list"></div>
     </section>
 
@@ -320,6 +337,11 @@
       let studyIndex = 0;
       let flipped = false;
       let studyOnlyUnlearned = false;
+      let studyReverse = false;
+      let selectedImportFormat = 'auto';
+      let mergeInProgress = false;
+      let mergeReviewed = new Set();
+      let mergeStats = { merged: 0, skipped: 0 };
       let quizQueue = [];
       let quizIndex = 0;
       let quizScore = 0;
@@ -387,7 +409,8 @@
         'Да, сбросить':'Yes, reset','Прогресс сброшен':'Progress reset','Не удалось выполнить действие':'Action failed',
         'Не удалось открыть локальное хранилище':'Could not open local storage','Открой приложение в современном браузере (Chrome, Safari или Firefox) и проверь, что для него разрешено хранение данных.':'Open the app in a modern browser (Chrome, Safari, or Firefox) and make sure storage is enabled.',
         'Экспорт слов':'Export vocabulary','Сбросить прогресс':'Reset progress','Обновление серии':'Streak updated','Импорт завершён':'Import complete',
-        'Серия занятий':'Study streak','Источник':'Source','Google Translate':'Google Translate','MyMemory':'MyMemory','Lingva':'Lingva','Слушать произношение':'Listen to pronunciation','Слушать':'Listen'
+        'Серия занятий':'Study streak','Источник':'Source','Google Translate':'Google Translate','MyMemory':'MyMemory','Lingva':'Lingva','Слушать произношение':'Listen to pronunciation','Слушать':'Listen',
+        'Заучивание · EN → RU':'Study · EN → RU','Обратное заучивание · RU → EN':'Reverse study · RU → EN','Английское слово — перевод на русский':'English word — Russian translation','Русское значение — вспомни английское слово':'Russian meaning — recall the English word','выучено в обоих направлениях':'mastered in both directions','Продолжить EN → RU · невыученные':'Continue EN → RU · unmastered','Продолжить RU → EN · невыученные':'Continue RU → EN · unmastered','Найти повторы':'Find duplicates','Формат файла':'File format','TXT · слово - перевод':'TXT · word - translation','CSV · запятая':'CSV · comma','CSV · точка с запятой':'CSV · semicolon','TSV · табуляция':'TSV · tab','Текст · вертикальная черта':'Text · pipe','Объединить':'Merge','Пропустить':'Skip','Точный повтор':'Exact duplicate','Одинаковое английское слово':'Same English term','Одинаковый перевод':'Same translation'
       };
       const EN_ATTR = {
         'Открыть меню':'Open menu','Меню':'Menu','Назад':'Back','Закрыть':'Close','Удалить':'Delete',
@@ -409,6 +432,7 @@
           else if ((m = trimmed.match(/^(\d+) учу$/))) translated = `${m[1]} learning`;
           else if ((m = trimmed.match(/^(\d+) знаю$/))) translated = `${m[1]} mastered`;
           else if ((m = trimmed.match(/^(\d+) верно$/))) translated = `${m[1]} correct`;
+          else if ((m = trimmed.match(/^(\d+)\/([\d]+) в обоих направлениях$/))) translated = `${m[1]}/${m[2]} mastered in both directions`;
           else if ((m = trimmed.match(/^(\d+) (слово|слова|слов)$/))) translated = `${m[1]} ${Number(m[1]) === 1 ? 'word' : 'words'}`;
           else if ((m = trimmed.match(/^Правильный ответ: (.*)$/))) translated = `Correct answer: ${m[1]}`;
           else if ((m = trimmed.match(/^«(.+)» будет удалено из словаря\. Это действие нельзя отменить\.$/))) translated = `“${m[1]}” will be removed from your vocabulary. This cannot be undone.`;
@@ -451,19 +475,30 @@
         const tx = db.transaction(STORE, 'readonly');
         return requestPromise(tx.objectStore(STORE).getAll());
       }
+      function transactionDone(tx) {
+        return new Promise((resolve, reject) => {
+          tx.addEventListener('complete', () => resolve(), { once: true });
+          tx.addEventListener('abort', () => reject(tx.error || new Error('IndexedDB transaction aborted')), { once: true });
+        });
+      }
       async function putWord(word) {
         const tx = db.transaction(STORE, 'readwrite');
-        await requestPromise(tx.objectStore(STORE).put(word));
+        const done = transactionDone(tx);
+        tx.objectStore(STORE).put(word);
+        await done;
       }
       async function deleteWord(id) {
         const tx = db.transaction(STORE, 'readwrite');
-        await requestPromise(tx.objectStore(STORE).delete(id));
+        const done = transactionDone(tx);
+        tx.objectStore(STORE).delete(id);
+        await done;
       }
       async function saveAll() {
         const tx = db.transaction(STORE, 'readwrite');
+        const done = transactionDone(tx);
         const store = tx.objectStore(STORE);
         words.forEach(word => store.put(word));
-        await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error); });
+        await done;
       }
       const todayKey = () => {
         const d = new Date();
@@ -510,14 +545,17 @@
       }
       function renderHome() {
         displayStreak();
-        const learned = words.filter(w => w.learned).length;
+        const masteredBoth = words.filter(w => w.learned && w.learnedReverse).length;
+        const learnedForward = words.filter(w => w.learned).length;
+        const learnedReverse = words.filter(w => w.learnedReverse).length;
         $('#total-count').textContent = words.length;
-        $('#mastered-count').textContent = learned;
-        $('#home-progress-label').textContent = words.length ? `${learned}/${words.length} выучено` : '';
-        const button = $('#continue-study');
-        button.hidden = !(words.length && learned > 0 && learned < words.length);
-        $('#start-study').querySelector('.mode-copy span').textContent = words.length ? 'Карточки по порядку — переворачивай и оценивай себя' : 'Добавь первые слова, чтобы начать';
-        $('#start-quiz').querySelector('.mode-copy span').textContent = words.length ? 'Случайный порядок и перевод в обе стороны' : 'Проверь себя, когда появятся карточки';
+        $('#mastered-count').textContent = masteredBoth;
+        $('#home-progress-label').textContent = words.length ? `${masteredBoth}/${words.length} в обоих направлениях` : '';
+        $('#continue-study-forward').hidden = !(words.length && learnedForward > 0 && learnedForward < words.length);
+        $('#continue-study-reverse').hidden = !(words.length && learnedReverse > 0 && learnedReverse < words.length);
+        $('#start-study').querySelector('.mode-copy span').textContent = words.length ? 'Английское слово — перевод на русский' : 'Добавь первые слова, чтобы начать';
+        $('#start-study-reverse').querySelector('.mode-copy span').textContent = words.length ? 'Русское значение — вспомни английское слово' : 'Добавь первые слова, чтобы начать';
+        $('#start-quiz').querySelector('.mode-copy span').textContent = words.length ? 'Случайный порядок, перевод в обе стороны' : 'Проверь себя, когда появятся карточки';
         localizeDom($('#screen-home'));
       }
       function renderWordList() {
@@ -529,12 +567,15 @@
           localizeDom($('#screen-add'));
           return;
         }
-        list.innerHTML = [...words].sort((a,b) => b.createdAt-a.createdAt).map(word => `<div class="word-row"><span class="learned-mark" style="background:${word.learned ? 'var(--green)' : '#e2b15e'}"></span><div class="word-row-main"><strong>${esc(word.en)}</strong><span>${esc(word.ru)}</span></div><button class="delete-btn" data-delete="${esc(word.id)}" aria-label="Удалить ${esc(word.en)}">${iconTrash}</button></div>`).join('');
+        list.innerHTML = [...words].sort((a,b) => b.createdAt-a.createdAt).map(word => `<div class="word-row"><span class="learned-marks" aria-label="Прогресс заучивания"><span class="learned-mark ${word.learned ? 'is-learned' : ''}" title="EN → RU"></span><span class="learned-mark ${word.learnedReverse ? 'is-learned' : ''}" title="RU → EN"></span></span><div class="word-row-main"><strong>${esc(word.en)}</strong><span>${esc(word.ru)}</span></div><button class="delete-btn" data-delete="${esc(word.id)}" aria-label="Удалить ${esc(word.en)}">${iconTrash}</button></div>`).join('');
         localizeDom($('#screen-add'));
         list.querySelectorAll('[data-delete]').forEach(button => button.addEventListener('click', () => {
           const word = words.find(w => w.id === button.dataset.delete);
-          openModal('Удалить карточку?', `«${word?.en || 'Слово'}» будет удалено из словаря. Это действие нельзя отменить.`, 'Удалить', async () => {
-            await deleteWord(button.dataset.delete); words = words.filter(w => w.id !== button.dataset.delete); renderWordList(); renderHome(); showToast('Карточка удалена');
+          if (!word) return;
+          openModal('Удалить карточку?', `«${word.en}» будет удалено из словаря. Это действие нельзя отменить.`, 'Удалить', async () => {
+            await deleteWord(word.id);
+            words = words.filter(w => w.id !== word.id);
+            renderWordList(); renderHome(); showToast('Карточка удалена');
           });
         }));
       }
@@ -544,9 +585,12 @@
         if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return 'слова';
         return 'слов';
       }
-      function startStudy(onlyUnlearned = false) {
+      function startStudy(onlyUnlearned = false, reverse = false) {
         studyOnlyUnlearned = onlyUnlearned;
-        studyQueue = (onlyUnlearned ? words.filter(w => !w.learned) : [...words]).map(w => w.id);
+        studyReverse = reverse;
+        studyQueue = (onlyUnlearned ? words.filter(w => !(reverse ? w.learnedReverse : w.learned)) : [...words])
+          .sort((a,b) => (Number(a.createdAt)||0) - (Number(b.createdAt)||0) || String(a.en).localeCompare(String(b.en)))
+          .map(w => w.id);
         studyIndex = 0; flipped = false;
         showScreen('study'); renderStudy();
       }
@@ -562,7 +606,7 @@
           return;
         }
         if (studyIndex >= queue.length) {
-          const learnedInQueue = queue.filter(w => w.learned).length;
+          const learnedInQueue = queue.filter(w => studyReverse ? w.learnedReverse : w.learned).length;
           const pending = queue.length - learnedInQueue;
           body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Карточки пройдены. Отметки сохранились на устройстве.</p><div class="completion-stats"><div><strong>${learnedInQueue}</strong><span>выучено в подборке</span></div><div><strong>${pending}</strong><span>ещё повторить</span></div></div><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Продолжить учёбу</button>' : '<button class="primary" id="completion-continue">Повторить все слова</button>'}<button class="secondary" id="completion-home">На главную</button></div></div>`;
           $('#completion-continue').addEventListener('click', () => pending ? startStudy(true) : startStudy(false));
@@ -571,14 +615,21 @@
           return;
         }
         const word = queue[studyIndex];
-        const learnedCount = queue.filter(w => w.learned).length;
+        const learnedCount = queue.filter(w => studyReverse ? w.learnedReverse : w.learned).length;
         const pendingCount = queue.length - learnedCount;
-        body.innerHTML = `<div class="progress-head"><div style="flex:1;min-width:0"><div class="progress-number">${studyIndex+1}<span> / ${queue.length}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(studyIndex/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} учу</div><div class="pill green">${learnedCount} знаю</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">English</span><button class="speak-btn" id="speak-word" type="button" aria-label="Слушать произношение" title="Слушать" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button><div class="word-text">${esc(word.en)}</div><span class="tap-hint">Нажми, чтобы увидеть перевод</span></div><div class="face back"><span class="face-label">Русский</span><div class="word-text">${esc(word.ru)}</div><span class="tap-hint">Нажми, чтобы вернуться</span></div></div><div class="swipe-stamp left">ЕЩЁ УЧУ</div><div class="swipe-stamp right">ВЫУЧЕНО</div></div><div class="gesture-hints"><span class="left"><b>←</b> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
+        const frontLanguage = studyReverse ? 'Русский' : 'English';
+        const backLanguage = studyReverse ? 'English' : 'Русский';
+        const frontWord = studyReverse ? word.ru : word.en;
+        const backWord = studyReverse ? word.en : word.ru;
+        const frontHint = studyReverse ? 'Нажми, чтобы вспомнить английское слово' : 'Нажми, чтобы увидеть перевод';
+        const backHint = 'Нажми, чтобы вернуться';
+        const speakButton = '<button class="speak-btn" id="speak-word" type="button" aria-label="Слушать произношение" title="Слушать" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>';
+        body.innerHTML = `<div class="progress-head"><div style="flex:1;min-width:0"><div class="progress-number">${studyIndex+1}<span> / ${queue.length}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(studyIndex/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} учу</div><div class="pill green">${learnedCount} знаю</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">${frontLanguage}</span>${studyReverse ? '' : speakButton}<div class="word-text">${esc(frontWord)}</div><span class="tap-hint">${frontHint}</span></div><div class="face back"><span class="face-label">${backLanguage}</span>${studyReverse ? speakButton : ''}<div class="word-text">${esc(backWord)}</div><span class="tap-hint">${backHint}</span></div></div><div class="swipe-stamp left">ЕЩЁ УЧУ</div><div class="swipe-stamp right">ВЫУЧЕНО</div></div><div class="gesture-hints"><span class="left"><b>←</b> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
         localizeDom(body);
         const card = $('#flashcard');
         card.addEventListener('click', e => { if (e.target.closest('#speak-word')) return; if (suppressCardClick) { suppressCardClick = false; return; } if (gestureMoved) { gestureMoved = false; return; } flipped = !flipped; card.classList.toggle('flipped', flipped); });
         card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('#speak-word')) { e.preventDefault(); flipped = !flipped; card.classList.toggle('flipped', flipped); } });
-        $('#speak-word').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); speakWord(word.en); });
+        $('#speak-word')?.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); speakWord(word.en); });
         let startX = 0, startY = 0, deltaX = 0, deltaY = 0, pointerId = null;
         let gestureMoved = false;
         const resetDrag = () => { card.classList.remove('dragging'); card.removeAttribute('data-swipe'); card.style.removeProperty('--swipe-opacity'); card.style.transform = ''; };
@@ -643,7 +694,8 @@
         const queue = getStudyWords();
         const word = queue[studyIndex];
         if (!word) return;
-        word.learned = isLearned; await putWord(word); recordStudyDay();
+        if (studyReverse) word.learnedReverse = isLearned; else word.learned = isLearned;
+        await putWord(word); recordStudyDay();
         if (studyIndex < queue.length-1) { studyIndex++; flipped = false; renderStudy(); }
         else { studyIndex++; renderStudy(); }
       }
@@ -657,12 +709,24 @@
         quizQueue = shuffle(words.map(w => w.id)); quizIndex = 0; quizScore = 0; quizAnswered = false; quizQuestion = null;
         showScreen('quiz'); renderQuiz();
       }
+      function normalizeMatch(value) {
+        return String(value ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+      }
       function makeQuizQuestion() {
         const current = words.find(w => w.id === quizQueue[quizIndex]);
         if (!current) return null;
         const englishPrompt = Math.random() < .5;
         const target = englishPrompt ? current.ru : current.en;
-        const distractors = shuffle(words.filter(w => w.id !== current.id)).slice(0, Math.min(2, words.length-1)).map(w => ({id:w.id, value:englishPrompt?w.ru:w.en}));
+        const usedValues = new Set([normalizeMatch(target)]);
+        const distractors = [];
+        for (const word of shuffle(words.filter(w => w.id !== current.id))) {
+          const value = englishPrompt ? word.ru : word.en;
+          const key = normalizeMatch(value);
+          if (!key || usedValues.has(key)) continue;
+          usedValues.add(key);
+          distractors.push({id:word.id, value});
+          if (distractors.length === 2) break;
+        }
         const options = shuffle([{id:current.id, value:target}, ...distractors]);
         return {id:current.id, prompt:englishPrompt?current.en:current.ru, promptLanguage:englishPrompt?'English':'Русский', answerLanguage:englishPrompt?'Русский':'English', correctId:current.id, correctValue:target, options};
       }
@@ -829,11 +893,12 @@
       function openModal(title, message, confirmText, action) {
         $('#modal-title').textContent = translateText(title); $('#modal-message').textContent = translateText(message); $('#modal-confirm').textContent = translateText(confirmText); $('#modal-cancel').textContent = translateText('Отмена'); modalAction = action;
         const extra = $('#modal-extra'); if (extra) extra.style.display = 'none';
+        $('#modal-cancel').onclick = closeModal;
         $('#modal-backdrop').classList.add('open'); $('#modal-confirm').focus();
       }
       function closeModal() { $('#modal-backdrop').classList.remove('open'); modalAction = null; }
       async function exportWords() {
-        const payload = { format: 'lexica-v1', exportedAt: new Date().toISOString(), words: words.map(({id,en,ru,learned,createdAt})=>({id,en,ru,learned,createdAt})) };
+        const payload = { format: 'lexica-v1', exportedAt: new Date().toISOString(), words: words.map(({id,en,ru,learned,learnedReverse,createdAt})=>({id,en,ru,learned:Boolean(learned),learnedReverse:Boolean(learnedReverse),createdAt})) };
         const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
         const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `lexica-backup-${todayKey()}.json`; a.click(); URL.revokeObjectURL(url);
         showToast('Резервная копия подготовлена');
@@ -868,76 +933,231 @@
         const first = String(row?.[0] || '').trim().toLowerCase(); const second = String(row?.[1] || '').trim().toLowerCase();
         return ['en','english','word','term','слово','английский'].includes(first) || ['ru','russian','translation','meaning','перевод','русский'].includes(second);
       }
+      function parseDashText(text) {
+        const rows = [];
+        const invalidLines = [];
+        const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
+        lines.forEach((line, index) => {
+          if (!line.trim()) return;
+          const match = line.match(/^(.+?)\s+-\s+(.+)$/);
+          if (!match) { invalidLines.push(index + 1); return; }
+          const en = match[1].trim();
+          const ru = match[2].trim();
+          if (en && ru) rows.push([en, ru]);
+          else invalidLines.push(index + 1);
+        });
+        return { rows, invalidLines };
+      }
       async function importVocabulary() {
         if (importInProgress) return;
         const file = $('#import-file').files?.[0];
         if (!file) { showToast(LANG === 'en' ? 'Choose a file first.' : 'Сначала выбери файл.'); return; }
         importInProgress = true; $('#import-button').disabled = true;
+        let invalidLineCount = 0;
         try {
-          const raw = await file.text(); let incoming = [];
-          if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
-            const parsed = JSON.parse(raw.replace(/^\uFEFF/, ''));
+          const raw = (await file.text()).replace(/^\uFEFF/, '');
+          let incoming = [];
+          const looksLikeDashText = /\.txt$/i.test(file.name) && raw.split(/\r?\n/).some(line => /^.+?\s+-\s+.+$/.test(line));
+          if (selectedImportFormat === 'dash' || (selectedImportFormat === 'auto' && looksLikeDashText)) {
+            const parsed = parseDashText(raw);
+            invalidLineCount = parsed.invalidLines.length;
+            incoming = parsed.rows.map(([en,ru])=>({en,ru,learned:false,learnedReverse:false,createdAt:Date.now()}));
+            if (!incoming.length) throw new Error(LANG === 'en' ? 'No lines matched “word - translation”.' : 'Не найдено строк формата «слово - перевод».');
+          } else if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
+            const parsed = JSON.parse(raw);
             const source = Array.isArray(parsed) ? parsed : parsed.words;
             if (!Array.isArray(source)) throw new Error('JSON file does not contain a words array');
-            incoming = source.map(w=>({en:String(w.en ?? w.english ?? w.word ?? '').trim(), ru:String(w.ru ?? w.translation ?? w.meaning ?? '').trim(), learned:Boolean(w.learned), createdAt:Number(w.createdAt)||Date.now()})).filter(w=>w.en && w.ru);
+            incoming = source.map(w=>({en:String(w.en ?? w.english ?? w.word ?? '').trim(), ru:String(w.ru ?? w.translation ?? w.meaning ?? '').trim(), learned:Boolean(w.learned), learnedReverse:Boolean(w.learnedReverse), createdAt:Number(w.createdAt)||Date.now()})).filter(w=>w.en && w.ru);
           } else {
-            let selected = $('#import-delimiter').value;
-            let delimiter = selected === 'auto' ? detectDelimiter((raw.replace(/^\uFEFF/, '').split(/\r?\n/,1)[0] || '')) : selected === 'tab' ? '\t' : selected;
-            const rows = parseDelimited(raw.replace(/^\uFEFF/, ''), delimiter);
+            const selected = selectedImportFormat;
+            const delimiter = selected === 'auto' ? detectDelimiter((raw.split(/\r?\n/,1)[0] || '')) : selected === 'tab' ? '\t' : selected;
+            const rows = parseDelimited(raw, delimiter);
             if (!rows.length) throw new Error('No rows found');
             const headerMode = $('#import-header').value;
             const skipHeader = headerMode === 'yes' || (headerMode === 'auto' && headerLikely(rows[0]));
             if (skipHeader && rows.length < 2) throw new Error('The file only contains a header row');
             const dataRows = skipHeader ? rows.slice(1) : rows;
-            incoming = dataRows.map(row=>({en:String(row[0] || '').trim(),ru:String(row[1] || '').trim(),learned:false,createdAt:Date.now()})).filter(w=>w.en && w.ru);
+            incoming = dataRows.map(row=>({en:String(row[0] || '').trim(),ru:String(row[1] || '').trim(),learned:false,learnedReverse:false,createdAt:Date.now()})).filter(w=>w.en && w.ru);
           }
-          let added = 0, duplicates = 0;
+          const known = new Set(words.map(w=>`${normalizeMatch(w.en)}\u0000${normalizeMatch(w.ru)}`));
+          const additions = [];
+          let duplicates = 0;
           for (const item of incoming) {
-            const dup = words.some(w=>w.en.trim().toLocaleLowerCase()===item.en.toLocaleLowerCase() && w.ru.trim().toLocaleLowerCase()===item.ru.toLocaleLowerCase());
-            if (dup) { duplicates++; continue; }
-            const word = {id:(crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), en:item.en, ru:item.ru, learned:Boolean(item.learned), createdAt:item.createdAt || Date.now()};
-            await putWord(word); words.push(word); added++;
+            const key = `${normalizeMatch(item.en)}\u0000${normalizeMatch(item.ru)}`;
+            if (known.has(key)) { duplicates++; continue; }
+            known.add(key);
+            additions.push({...item, id:(crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), learned:Boolean(item.learned), learnedReverse:Boolean(item.learnedReverse)});
+          }
+          if (additions.length) {
+            const tx = db.transaction(STORE, 'readwrite');
+            const done = transactionDone(tx);
+            const store = tx.objectStore(STORE);
+            additions.forEach(word => store.put(word));
+            await done;
+            words.push(...additions);
           }
           renderWordList(); renderHome();
-          showToast(LANG === 'en' ? `Imported ${added} card${added===1?'':'s'}; skipped ${duplicates} duplicate${duplicates===1?'':'s'}.` : `Импортировано: ${added}. Дубликатов пропущено: ${duplicates}.`);
+          const base = LANG === 'en'
+            ? `Imported ${additions.length}; skipped ${duplicates} duplicates${invalidLineCount ? `; ignored ${invalidLineCount} malformed line(s)` : ''}`
+            : `Импортировано: ${additions.length}; дубликатов пропущено: ${duplicates}${invalidLineCount ? `; строк без разделителя пропущено: ${invalidLineCount}` : ''}`;
+          showToast(base);
         } catch (error) {
-          showToast(LANG === 'en' ? `Could not import the file. Check the format and selected delimiter. (${error.message})` : `Не удалось импортировать файл. Проверь формат и выбранный разделитель. (${error.message})`);
+          showToast(LANG === 'en' ? `Could not import the file. Check its format and selected option. (${error.message})` : `Не удалось импортировать файл. Проверь формат и выбранный вариант. (${error.message})`);
         } finally { importInProgress = false; $('#import-button').disabled = false; }
       }
+      function updateImportFormat(format) {
+        selectedImportFormat = format;
+        document.querySelectorAll('[data-import-format]').forEach(button => {
+          const active = button.dataset.importFormat === format;
+          button.classList.toggle('is-selected', active);
+          button.setAttribute('aria-pressed', String(active));
+        });
+      }
+      function mergeCandidateKey(candidate) {
+        return `${candidate.type}:${[candidate.a.id,candidate.b.id].sort().join(':')}`;
+      }
+      function getNextMergeCandidate() {
+        const candidates = [];
+        const priority = { exact: 0, sameEn: 1, sameRu: 2 };
+        for (let i = 0; i < words.length; i++) {
+          for (let j = i + 1; j < words.length; j++) {
+            const a = words[i], b = words[j];
+            const sameEn = normalizeMatch(a.en) === normalizeMatch(b.en);
+            const sameRu = normalizeMatch(a.ru) === normalizeMatch(b.ru);
+            if (sameEn && sameRu) candidates.push({type:'exact',a,b});
+            else if (sameEn) candidates.push({type:'sameEn',a,b});
+            else if (sameRu) candidates.push({type:'sameRu',a,b});
+          }
+        }
+        candidates.sort((a,b)=>priority[a.type]-priority[b.type]);
+        return candidates.find(candidate => !mergeReviewed.has(mergeCandidateKey(candidate))) || null;
+      }
+      function joinDistinctText(a, b) {
+        const values = [String(a || '').trim(), String(b || '').trim()].filter(Boolean);
+        const seen = new Set();
+        return values.filter(value => {
+          const key = normalizeMatch(value);
+          if (seen.has(key)) return false;
+          seen.add(key); return true;
+        }).join('; ');
+      }
+      async function applyMergeCandidate(candidate) {
+        const a = words.find(w => w.id === candidate.a.id);
+        const b = words.find(w => w.id === candidate.b.id);
+        if (!a || !b) return;
+        const merged = {...a, createdAt:Math.min(Number(a.createdAt)||Date.now(), Number(b.createdAt)||Date.now())};
+        if (candidate.type === 'exact') {
+          merged.learned = Boolean(a.learned || b.learned);
+          merged.learnedReverse = Boolean(a.learnedReverse || b.learnedReverse);
+        } else if (candidate.type === 'sameEn') {
+          merged.ru = joinDistinctText(a.ru,b.ru);
+          merged.learned = Boolean(a.learned && b.learned);
+          merged.learnedReverse = Boolean(a.learnedReverse && b.learnedReverse);
+        } else {
+          merged.en = joinDistinctText(a.en,b.en);
+          merged.learned = Boolean(a.learned && b.learned);
+          merged.learnedReverse = Boolean(a.learnedReverse && b.learnedReverse);
+        }
+        const tx = db.transaction(STORE, 'readwrite');
+        const done = transactionDone(tx);
+        const store = tx.objectStore(STORE);
+        store.put(merged);
+        store.delete(b.id);
+        await done;
+        words = words.map(w => w.id === a.id ? merged : w).filter(w => w.id !== b.id);
+      }
+      function mergePrompt(candidate) {
+        const a = candidate.a, b = candidate.b;
+        if (LANG === 'en') {
+          const title = candidate.type === 'exact' ? 'Exact duplicate' : candidate.type === 'sameEn' ? 'Same English term' : 'Same translation';
+          const message = candidate.type === 'exact'
+            ? `These cards are identical:\n${a.en} — ${a.ru}\n\nRemove one duplicate?`
+            : candidate.type === 'sameEn'
+              ? `The English term is the same but translations differ:\n${a.en} — ${a.ru}\n${b.en} — ${b.ru}\n\nCombine the translations into one card?`
+              : `The translations match:\n${a.en} — ${a.ru}\n${b.en} — ${b.ru}\n\nCombine the English terms into one card?`;
+          return {title,message,confirm:'Merge',skip:'Skip'};
+        }
+        const title = candidate.type === 'exact' ? 'Точный повтор' : candidate.type === 'sameEn' ? 'Одинаковое английское слово' : 'Одинаковый перевод';
+        const message = candidate.type === 'exact'
+          ? `Карточки полностью совпадают:\n${a.en} — ${a.ru}\n\nУдалить повторную карточку?`
+          : candidate.type === 'sameEn'
+            ? `Английское слово совпадает, переводы различаются:\n${a.en} — ${a.ru}\n${b.en} — ${b.ru}\n\nОбъединить переводы в одной карточке?`
+            : `Переводы совпадают:\n${a.en} — ${a.ru}\n${b.en} — ${b.ru}\n\nОбъединить английские слова в одной карточке?`;
+        return {title,message,confirm:'Объединить',skip:'Пропустить'};
+      }
+      function continueMergeReview() {
+        const candidate = getNextMergeCandidate();
+        if (!candidate) {
+          mergeInProgress = false;
+          renderWordList(); renderHome();
+          showToast(LANG === 'en'
+            ? `Review complete: merged ${mergeStats.merged}; skipped ${mergeStats.skipped}.`
+            : `Проверка завершена: объединено ${mergeStats.merged}; пропущено ${mergeStats.skipped}.`);
+          return;
+        }
+        const prompt = mergePrompt(candidate);
+        openModal(prompt.title,prompt.message,prompt.confirm,async()=>{
+          try {
+            await applyMergeCandidate(candidate);
+            mergeStats.merged++;
+            mergeReviewed.add(mergeCandidateKey(candidate));
+            continueMergeReview();
+          } catch (error) {
+            mergeInProgress = false;
+            showToast(LANG === 'en' ? `Merge failed: ${error.message}` : `Не удалось объединить карточки: ${error.message}`);
+          }
+        });
+        $('#modal-cancel').textContent = prompt.skip;
+        $('#modal-cancel').onclick = () => {
+          closeModal(); mergeReviewed.add(mergeCandidateKey(candidate)); mergeStats.skipped++; continueMergeReview();
+        };
+      }
+      function startMergeReview() {
+        if (mergeInProgress) return;
+        mergeReviewed = new Set();
+        mergeStats = {merged:0, skipped:0};
+        mergeInProgress = true;
+        continueMergeReview();
+      }
       function handleMenu() {
-        const hasLearned = words.some(w=>w.learned);
-        const message = LANG === 'en' ? `Cards: ${words.length}. Mastered: ${words.filter(w=>w.learned).length}.\n\nChoose an action: continue studying unmastered cards or reset all progress. Export creates a backup.` : `Слов: ${words.length}. Выучено: ${words.filter(w=>w.learned).length}.\n\nВыбери действие: продолжить учёбу на невыученных карточках или сбросить весь прогресс. Экспорт создаст резервную копию слов.`;
-        openModal('Меню словаря', message, 'Сбросить прогресс', async () => {
-          openModal('Сбросить прогресс?', 'Все карточки останутся в словаре, но снова станут невыученными. Это действие нельзя отменить.', 'Да, сбросить', async () => {
-            words.forEach(w => w.learned = false); await saveAll(); renderHome(); showToast('Прогресс сброшен');
+        const masteredBoth = words.filter(w=>w.learned && w.learnedReverse).length;
+        const message = LANG === 'en'
+          ? `Cards: ${words.length}. Mastered in both directions: ${masteredBoth}.\n\nChoose a direction to continue, reset all progress, or export a backup.`
+          : `Карточек: ${words.length}. Выучено в обоих направлениях: ${masteredBoth}.\n\nВыбери направление для продолжения, сбрось прогресс или экспортируй резервную копию.`;
+        openModal('Меню словаря', message, LANG === 'en' ? 'Reset progress' : 'Сбросить прогресс', async () => {
+          openModal('Сбросить прогресс?', 'Все карточки останутся в словаре, но снова станут невыученными в обоих направлениях. Это действие нельзя отменить.', 'Да, сбросить', async () => {
+            words.forEach(w => { w.learned = false; w.learnedReverse = false; });
+            await saveAll(); renderHome(); renderWordList(); showToast('Прогресс сброшен');
           });
         });
-        $('#modal-cancel').textContent = translateText('Закрыть');
-        $('#modal-confirm').textContent = translateText('Сбросить прогресс');
-        // Put safe secondary actions into the modal without creating a second settings screen.
+        $('#modal-cancel').textContent = LANG === 'en' ? 'Close' : 'Закрыть';
         let extra = $('#modal-extra');
-        if (!extra) { extra = document.createElement('div'); extra.id='modal-extra'; extra.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px'; $('#modal-actions-placeholder'); $('.modal-actions').after(extra); }
+        if (!extra) { extra = document.createElement('div'); extra.id='modal-extra'; extra.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px'; $('.modal-actions').after(extra); }
         extra.style.display = 'grid';
-        extra.innerHTML = `<button class="secondary" id="menu-continue" ${hasLearned && words.some(w=>!w.learned) ? '' : 'disabled'}>${LANG === 'en' ? 'Continue studying' : 'Продолжить учёбу'}</button><button class="secondary" id="menu-export">${LANG === 'en' ? 'Export vocabulary' : 'Экспорт слов'}</button>`;
-        $('#menu-continue').onclick = () => { closeModal(); if (words.some(w=>!w.learned)) startStudy(true); else showToast(LANG === 'en' ? 'All cards are already mastered.' : 'Все карточки уже выучены'); };
+        extra.innerHTML = `<button class="secondary" id="menu-continue-forward" ${words.some(w=>!w.learned)?'':'disabled'}>${LANG === 'en' ? 'Continue EN → RU' : 'Продолжить EN → RU'}</button><button class="secondary" id="menu-continue-reverse" ${words.some(w=>!w.learnedReverse)?'':'disabled'}>${LANG === 'en' ? 'Continue RU → EN' : 'Продолжить RU → EN'}</button><button class="secondary" id="menu-export">${LANG === 'en' ? 'Export vocabulary' : 'Экспорт слов'}</button>`;
+        $('#menu-continue-forward').onclick = () => { closeModal(); if (words.some(w=>!w.learned)) startStudy(true,false); else showToast(LANG === 'en' ? 'All cards are mastered in this direction.' : 'В этом направлении все карточки выучены'); };
+        $('#menu-continue-reverse').onclick = () => { closeModal(); if (words.some(w=>!w.learnedReverse)) startStudy(true,true); else showToast(LANG === 'en' ? 'All cards are mastered in this direction.' : 'В этом направлении все карточки выучены'); };
         $('#menu-export').onclick = () => { closeModal(); exportWords(); };
         $('#modal-cancel').onclick = closeModal;
       }
 
       $('#open-add').addEventListener('click', () => showScreen('add'));
-      $('#start-study').addEventListener('click', () => words.length ? startStudy(false) : showScreen('add'));
+      $('#start-study').addEventListener('click', () => words.length ? startStudy(false,false) : showScreen('add'));
+      $('#start-study-reverse').addEventListener('click', () => words.length ? startStudy(false,true) : showScreen('add'));
       $('#start-quiz').addEventListener('click', () => words.length ? startQuiz() : showScreen('add'));
-      $('#continue-study').addEventListener('click', () => startStudy(true));
+      $('#continue-study-forward').addEventListener('click', () => startStudy(true,false));
+      $('#continue-study-reverse').addEventListener('click', () => startStudy(true,true));
       document.querySelectorAll('[data-go="home"]').forEach(button => button.addEventListener('click', () => showScreen('home')));
       $('#word-form').addEventListener('submit', e => addWord(e, false));
       $('#save-and-next').addEventListener('click', e => addWord(e, true));
       $('#translate-button').addEventListener('click', translateWord);
       $('#import-button').addEventListener('click', importVocabulary);
+      document.querySelectorAll('[data-import-format]').forEach(button => button.addEventListener('click', () => updateImportFormat(button.dataset.importFormat)));
+      $('#merge-button').addEventListener('click', startMergeReview);
       $('#word-input').addEventListener('input', () => { chosenSuggestion = ''; $('#translation-input').value = ''; $('#suggestions').classList.remove('visible'); });
       $('#translation-input').addEventListener('input', () => { chosenSuggestion = ''; });
       $('#menu-button').addEventListener('click', handleMenu);
       $('#modal-close').addEventListener('click', closeModal);
-      $('#modal-cancel').addEventListener('click', closeModal);
       $('#modal-backdrop').addEventListener('click', e => { if (e.target === $('#modal-backdrop')) closeModal(); });
       $('#modal-confirm').addEventListener('click', async () => {
         const action = modalAction; closeModal();
@@ -948,7 +1168,7 @@
         try {
           db = await openDb(); words = await readAllWords();
           // Normalize records if an older local schema or partial edit left fields missing.
-          words = words.filter(w => w && w.id && typeof w.en === 'string' && typeof w.ru === 'string').map(w => ({...w, learned: Boolean(w.learned), createdAt: Number(w.createdAt)||Date.now()}));
+          words = words.filter(w => w && w.id && typeof w.en === 'string' && typeof w.ru === 'string').map(w => ({...w, learned: Boolean(w.learned), learnedReverse: Boolean(w.learnedReverse), createdAt: Number(w.createdAt)||Date.now()}));
           renderHome(); renderWordList(); localizeDom(document.body);
           if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => {});
         } catch (error) {
