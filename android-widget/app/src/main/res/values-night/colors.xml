@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="app_background">#101511</color>
-    <color name="widget_title">#B9C8BC</color>
-    <color name="widget_number">#F0F7F0</color>
-    <color name="widget_caption">#A8B7AB</color>
-    <color name="widget_icon_background">#294333</color>
-    <color name="widget_icon_foreground">#D8F4DD</color>
-</resources>
