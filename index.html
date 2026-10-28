@@ -300,7 +300,7 @@
     #screen-study .pill { flex: 1 1 0; min-width: 0; }
     #screen-study .study-card-area { min-height: 302px; }
     #screen-study .flashcard { min-height: 300px; }
-    #screen-study .progress-number { display: block; width: 100%; text-align: center; }
+    #screen-study .progress-number { display: block; width: 100%; text-align: center; margin-inline: auto; }
     #screen-study .gesture-hints {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -309,11 +309,22 @@
     }
     #screen-study .gesture-hints > span {
       width: 100%;
+      min-height: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
       justify-self: stretch;
       text-align: center;
+      line-height: 24px;
+    }
+    #screen-study .gesture-hints .gesture-arrow {
+      display: block;
+      flex: 0 0 18px;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      vertical-align: middle;
+      transform: translateY(-1px);
     }
     #screen-study .gesture-hints .left { grid-column: 1; }
     #screen-study .gesture-hints .right { grid-column: 2; }
@@ -840,7 +851,7 @@
       }
       function startStudy(onlyUnlearned = false, reverse = false, forceNew = false) {
         let restored = false;
-        const saved = forceNew ? null : readSavedStudySession();
+        const saved = forceNew ? null : readSavedStudySession(onlyUnlearned, reverse);
         if (saved && saved.active && saved.onlyUnlearned === onlyUnlearned && saved.reverse === reverse) {
           const validIds = new Set(words.map(w => w.id));
           const savedCurrentId = saved.queue[saved.index];
@@ -932,7 +943,7 @@
         const frontHint = studyReverse ? 'Нажми, чтобы вспомнить английское слово' : 'Нажми, чтобы увидеть перевод';
         const backHint = 'Нажми, чтобы вернуться';
         const speakButton = '<button class="speak-btn" id="speak-word" type="button" aria-label="Слушать произношение" title="Слушать" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>';
-        body.innerHTML = `<div class="progress-head"><div style="flex:1;min-width:0"><div class="progress-number">${passedCount}<span> / ${queue.length} пройдено</span></div><div class="progress-track"><div class="progress-fill" style="width:${(passedCount/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} ещё учу</div><div class="pill green">${learnedCount} выучено</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">${frontLanguage}</span>${studyReverse ? '' : speakButton}<div class="word-text">${esc(frontWord)}</div><span class="tap-hint">${frontHint}</span></div><div class="face back"><span class="face-label">${backLanguage}</span>${studyReverse ? speakButton : ''}<div class="word-text">${esc(backWord)}</div><span class="tap-hint">${backHint}</span></div></div><div class="swipe-stamp left">ЕЩЁ УЧУ</div><div class="swipe-stamp right">ВЫУЧЕНО</div></div><div class="gesture-hints"><span class="left"><b>←</b> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
+        body.innerHTML = `<div class="progress-head"><div style="flex:1 1 100%;width:100%;min-width:0"><div class="progress-number" style="display:block;width:100%;text-align:center">${passedCount}<span> / ${queue.length} пройдено</span></div><div class="progress-track"><div class="progress-fill" style="width:${(passedCount/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} ещё учу</div><div class="pill green">${learnedCount} выучено</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">${frontLanguage}</span>${studyReverse ? '' : speakButton}<div class="word-text">${esc(frontWord)}</div><span class="tap-hint">${frontHint}</span></div><div class="face back"><span class="face-label">${backLanguage}</span>${studyReverse ? speakButton : ''}<div class="word-text">${esc(backWord)}</div><span class="tap-hint">${backHint}</span></div></div><div class="swipe-stamp left">ЕЩЁ УЧУ</div><div class="swipe-stamp right">ВЫУЧЕНО</div></div><div class="gesture-hints"><span class="left"><svg class="gesture-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M5 12l7-7M5 12l7 7"/></svg> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
         localizeDom(body);
         const card = $('#flashcard');
         card.addEventListener('click', e => { if (e.target.closest('#speak-word')) return; if (suppressCardClick) { suppressCardClick = false; return; } if (gestureMoved) { gestureMoved = false; return; } flipped = !flipped; card.classList.toggle('flipped', flipped); });
