@@ -643,9 +643,25 @@
       }
       function recordStudyDay() {
         const today = todayKey();
+        const yesterday = dateOffset(today, -1);
         const data = streakData();
-        if (data.last === today) { syncNativeWidget(data.count, data.last); return; }
-        const count = data.last === dateOffset(today, -1) ? data.count + 1 : 1;
+
+        // Every answered card counts, even if the same card was studied again or in another mode.
+        // Keep the counter per local calendar day so study, reverse study, and quiz all contribute.
+        const savedDay = localStorage.getItem('lexica-activity-count-day') || '';
+        const savedCount = Number(localStorage.getItem('lexica-activity-count') || 0);
+        const cardCount = (savedDay === today && Number.isFinite(savedCount) ? Math.max(0, Math.floor(savedCount)) : 0) + 1;
+        localStorage.setItem('lexica-activity-count-day', today);
+        localStorage.setItem('lexica-activity-count', String(cardCount));
+
+        // Older versions extended a streak after the first answer. Preserve an already-recorded
+        // streak for today, but from now on a new day requires 10 answered cards before extending.
+        if (cardCount < 10 || data.last === today) {
+          syncNativeWidget(data.count, data.last);
+          return;
+        }
+
+        const count = data.last === yesterday ? data.count + 1 : 1;
         localStorage.setItem('lexica-streak', String(count));
         localStorage.setItem('lexica-last-day', today);
         syncNativeWidget(count, today);
