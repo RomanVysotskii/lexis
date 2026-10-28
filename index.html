@@ -53,9 +53,6 @@
     .streak-number { font-size: 38px; letter-spacing: -.07em; font-weight: 850; line-height: 1; }
     .streak-hex { color: var(--orange); width: 32px; height: 32px; }
     .streak-copy { color: var(--muted); font-size: 13px; margin-top: 7px; }
-    .streak-import-btn { margin-top: 10px; padding: 6px 0; border: 0; background: transparent; color: var(--green-dark); font-size: 11px; font-weight: 750; text-align: left; line-height: 1.35; }
-    .streak-import-btn:active { opacity: .7; }
-    .streak-import-btn[hidden] { display: none; }
     .add-card { width: 100px; border: 1px solid #cfe4d1; border-radius: var(--radius); background: var(--green-pale); color: var(--green-dark); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 9px; font-size: 12px; font-weight: 750; box-shadow: var(--shadow); }
     .add-card svg { width: 31px; height: 31px; }
     .add-card:active, .primary:active, .secondary:active { transform: scale(.985); }
@@ -306,7 +303,7 @@
       <div class="hero">
         <div class="streak-card">
           <div class="streak-top"><span class="eyebrow">Серия</span><svg class="streak-hex" viewBox="0 0 40 40" fill="none"><path d="M20 3 34 11v17L20 36 6 28V11L20 3Z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M21 10c2 5-4 6-2 10 1 2 3 2 4 0 4 5 1 10-4 10-6 0-9-6-5-11 2-3 5-4 7-9Z" fill="currentColor" opacity=".85"/></svg></div>
-          <div><div class="streak-number" id="streak-number">0</div><div class="streak-copy" id="streak-caption">дней подряд</div><button type="button" class="streak-import-btn" id="restore-quizlet-streak">Перенести серию 64 дня из Quizlet</button></div>
+          <div><div class="streak-number" id="streak-number">0</div><div class="streak-copy" id="streak-caption">дней подряд</div></div>
         </div>
         <button class="add-card" id="open-add" aria-label="Добавить слова"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Добавить<br>слова</span></button>
       </div>
@@ -383,6 +380,7 @@
       const DB_NAME = 'lexica-local-v1';
       const DB_VERSION = 1;
       const STORE = 'words';
+      const STUDY_SESSION_KEY = 'lexica-study-session-v1';
       let db;
       let words = [];
       let currentScreen = 'home';
@@ -572,19 +570,6 @@
       function streakData() {
         return { count: Number(localStorage.getItem('lexica-streak') || 0), last: localStorage.getItem('lexica-last-day') || '' };
       }
-      function setQuizletStreak64() {
-        localStorage.setItem('lexica-streak', '64');
-        localStorage.setItem('lexica-last-day', todayKey());
-        localStorage.setItem('lexica-quizlet-streak-imported', 'true');
-        syncNativeWidget(64, todayKey());
-      }
-      function applyQuizletStreakImport() {
-        const url = new URL(window.location.href);
-        if (url.searchParams.get('restoreQuizletStreak') !== '64') return;
-        setQuizletStreak64();
-        url.searchParams.delete('restoreQuizletStreak');
-        history.replaceState(history.state, '', url.pathname + url.search + url.hash);
-      }
       function recordStudyDay() {
         const today = todayKey();
         const data = streakData();
@@ -599,7 +584,6 @@
         const current = data.last === todayKey() || data.last === dateOffset(todayKey(), -1) ? data.count : 0;
         $('#streak-number').textContent = current;
         $('#streak-caption').textContent = translateText(current === 1 ? 'день в серии' : current > 1 && current < 5 ? 'дня в серии' : 'дней в серии');
-        $('#restore-quizlet-streak').hidden = localStorage.getItem('lexica-quizlet-streak-imported') === 'true';
         syncNativeWidget(current, data.last);
       }
       function syncNativeWidget(current, lastDay) {
@@ -643,6 +627,7 @@
         if (target === 'quiz') renderQuiz();
       });
       history.replaceState({ lexicaScreen: 'home' }, '', location.href);
+      window.addEventListener('pagehide', saveStudySession);
 
       function renderHome() {
         displayStreak();
@@ -747,16 +732,63 @@
         if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return 'слова';
         return 'слов';
       }
-      function startStudy(onlyUnlearned = false, reverse = false) {
-        studyOnlyUnlearned = onlyUnlearned;
-        studyReverse = reverse;
-        studyResults = new Map();
-        studyQueue = (onlyUnlearned ? words.filter(w => !(reverse ? w.learnedReverse : w.learned)) : [...words])
-          .sort((a,b) => (Number(a.createdAt)||0) - (Number(b.createdAt)||0))
-          .map(w => w.id);
-        studyIndex = 0; flipped = false;
+      function readSavedStudySession() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STUDY_SESSION_KEY) || 'null');
+          if (!saved || saved.version !== 1 || !Array.isArray(saved.queue) || !Number.isInteger(saved.index)) return null;
+          return saved;
+        } catch (_) { return null; }
+      }
+      function saveStudySession() {
+        try {
+          localStorage.setItem(STUDY_SESSION_KEY, JSON.stringify({
+            version: 1,
+            queue: studyQueue,
+            index: studyIndex,
+            onlyUnlearned: studyOnlyUnlearned,
+            reverse: studyReverse,
+            results: [...studyResults.entries()],
+            active: studyQueue.length > 0 && studyIndex < studyQueue.length
+          }));
+        } catch (_) {}
+      }
+      function clearStudySession() {
+        try { localStorage.removeItem(STUDY_SESSION_KEY); } catch (_) {}
+      }
+      function startStudy(onlyUnlearned = false, reverse = false, forceNew = false) {
+        let restored = false;
+        const saved = forceNew ? null : readSavedStudySession();
+        if (saved && saved.active && saved.onlyUnlearned === onlyUnlearned && saved.reverse === reverse) {
+          const validIds = new Set(words.map(w => w.id));
+          const savedCurrentId = saved.queue[saved.index];
+          const validQueue = saved.queue.filter(id => validIds.has(id));
+          let restoredIndex = savedCurrentId ? validQueue.indexOf(savedCurrentId) : -1;
+          if (restoredIndex < 0) restoredIndex = Math.min(saved.index, validQueue.length);
+          if (validQueue.length && restoredIndex < validQueue.length) {
+            studyQueue = validQueue;
+            studyIndex = restoredIndex;
+            studyOnlyUnlearned = saved.onlyUnlearned;
+            studyReverse = saved.reverse;
+            const positions = new Map(studyQueue.map((id, index) => [id, index]));
+            studyResults = new Map((Array.isArray(saved.results) ? saved.results : [])
+              .filter(entry => Array.isArray(entry) && validIds.has(entry[0]) &&
+                typeof entry[1] === 'boolean' && positions.has(entry[0]) && positions.get(entry[0]) < studyIndex));
+            restored = true;
+          }
+        }
+        if (!restored) {
+          studyOnlyUnlearned = onlyUnlearned;
+          studyReverse = reverse;
+          studyResults = new Map();
+          studyQueue = (onlyUnlearned ? words.filter(w => !(reverse ? w.learnedReverse : w.learned)) : [...words])
+            .sort((a,b) => (Number(a.createdAt)||0) - (Number(b.createdAt)||0))
+            .map(w => w.id);
+          studyIndex = 0;
+        }
+        flipped = false;
         const heading = $('#screen-study .back-row .eyebrow');
         if (heading) heading.textContent = translateText(reverse ? 'Обратное заучивание · RU → EN' : 'Заучивание · EN → RU');
+        saveStudySession();
         showScreen('study'); renderStudy();
       }
       function getStudyWords() { return studyQueue.map(id => words.find(w => w.id === id)).filter(Boolean); }
@@ -767,14 +799,16 @@
         }
         studyIndex = Math.max(0, targetIndex);
         flipped = false;
+        saveStudySession();
         renderStudy();
       }
       function renderStudy() {
         const body = $('#study-body');
         const queue = getStudyWords();
+        saveStudySession();
         if (!queue.length) {
           body.innerHTML = `<div class="completion"><div class="completion-mark">${words.length ? '✓' : '＋'}</div><h1>${words.length ? 'Всё выучено!' : 'Сначала добавим слова'}</h1><p class="subtext">${words.length ? 'В этой подборке больше нет невыученных карточек. Можно сбросить прогресс или повторить весь словарь.' : 'Без карточек тут как на экзамене без билетов.'}</p><div class="button-stack"><button class="primary" id="completion-continue">${words.length ? 'Повторить все слова' : 'Добавить слова'}</button>${words.length ? '<button class="secondary" id="completion-home">На главную</button>' : ''}</div></div>`;
-          $('#completion-continue').addEventListener('click', () => words.length ? startStudy(false, studyReverse) : showScreen('add'));
+          $('#completion-continue').addEventListener('click', () => words.length ? startStudy(false, studyReverse, true) : showScreen('add'));
           $('#completion-home')?.addEventListener('click', goBack);
           localizeDom(body);
           return;
@@ -782,7 +816,7 @@
         if (studyIndex >= queue.length) {
           const pending = queue.some(w => !(studyReverse ? w.learnedReverse : w.learned));
           body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Ты прошёл все карточки. При следующем прохождении счётчики начнутся с нуля.</p><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Повторить невыученные</button>' : '<button class="primary" id="completion-continue">Пройти ещё раз</button>'}<button class="secondary" id="completion-prev">Предыдущее слово</button><button class="secondary" id="completion-home">На главную</button></div></div>`;
-          $('#completion-continue').addEventListener('click', () => startStudy(pending, studyReverse));
+          $('#completion-continue').addEventListener('click', () => startStudy(pending, studyReverse, true));
           $('#completion-prev').addEventListener('click', () => rewindStudyTo(studyIndex - 1));
           $('#completion-home').addEventListener('click', goBack);
           localizeDom(body);
@@ -1082,7 +1116,7 @@
       }
       function closeModal() { $('#modal-backdrop').classList.remove('open'); modalAction = null; }
       async function exportWords() {
-        const payload = { format: 'lexica-v1', exportedAt: new Date().toISOString(), words: words.map(({id,en,ru,learned,learnedReverse,createdAt})=>({id,en,ru,learned:Boolean(learned),learnedReverse:Boolean(learnedReverse),createdAt})) };
+        const payload = { format: 'lexica-v1', exportedAt: new Date().toISOString(), words: words.map(word=>({id:word.id,en:word.en,ru:word.ru,learned:Boolean(word.learned),learnedReverse:Boolean(word.learnedReverse),quizStatus:['mastered','learning'].includes(word.quizStatus)?word.quizStatus:null,createdAt:word.createdAt})) };
         const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
         const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `lexica-backup-${todayKey()}.json`; a.click(); URL.revokeObjectURL(url);
         showToast('Резервная копия подготовлена');
@@ -1152,7 +1186,7 @@
             const parsed = JSON.parse(raw);
             const source = Array.isArray(parsed) ? parsed : parsed.words;
             if (!Array.isArray(source)) throw new Error('JSON file does not contain a words array');
-            incoming = source.map(w=>({en:String(w.en ?? w.english ?? w.word ?? '').trim(), ru:String(w.ru ?? w.translation ?? w.meaning ?? '').trim(), learned:Boolean(w.learned), learnedReverse:Boolean(w.learnedReverse), createdAt:Number(w.createdAt)||Date.now()})).filter(w=>w.en && w.ru);
+            incoming = source.map(w=>({en:String(w.en ?? w.english ?? w.word ?? '').trim(), ru:String(w.ru ?? w.translation ?? w.meaning ?? '').trim(), learned:Boolean(w.learned), learnedReverse:Boolean(w.learnedReverse), quizStatus:['mastered','learning'].includes(w.quizStatus)?w.quizStatus:null, createdAt:Number(w.createdAt)||Date.now()})).filter(w=>w.en && w.ru);
           } else {
             const selected = selectedImportFormat;
             const delimiter = selected === 'auto' ? detectDelimiter((raw.split(/\r?\n/,1)[0] || '')) : selected === 'tab' ? '\t' : selected;
@@ -1339,9 +1373,16 @@
           : `Карточек: ${words.length}. Выучено в обоих направлениях: ${masteredBoth}.\n\nВыбери направление для продолжения, сбрось прогресс или экспортируй резервную копию.`;
         openModal('Меню словаря', message, LANG === 'en' ? 'Reset progress' : 'Сбросить прогресс', async () => {
           openModal('Сбросить прогресс?', 'Все карточки останутся в словаре, но снова станут невыученными в обоих направлениях. Это действие нельзя отменить.', 'Да, сбросить', async () => {
-            const resetWords = words.map(w => ({...w, learned:false, learnedReverse:false}));
+            const resetWords = words.map(w => {
+              const reset = {...w, learned:false, learnedReverse:false};
+              delete reset.quizStatus;
+              return reset;
+            });
             await saveAll(resetWords);
             words = resetWords;
+            clearStudySession();
+            studyQueue = []; studyIndex = 0; studyResults = new Map();
+            quizQueue = []; quizIndex = 0; quizScore = 0; quizAnswered = false; quizQuestion = null;
             renderHome(); renderWordList(); showToast('Прогресс сброшен');
           });
         });
@@ -1380,13 +1421,6 @@
       $('#word-input').addEventListener('input', () => { chosenSuggestion = ''; $('#translation-input').value = ''; $('#suggestions').classList.remove('visible'); });
       $('#translation-input').addEventListener('input', () => { chosenSuggestion = ''; });
       $('#menu-button').addEventListener('click', handleMenu);
-      $('#restore-quizlet-streak').addEventListener('click', () => {
-        openModal('Перенести серию из Quizlet?', 'Серия Lexica станет равна 64 дням, а сегодняшний день будет засчитан. Карточки и прогресс изучения не изменятся.', 'Установить 64 дня', () => {
-          setQuizletStreak64();
-          renderHome();
-          showToast('Серия установлена: 64 дня');
-        });
-      });
       $('#modal-close').addEventListener('click', closeModal);
       $('#modal-backdrop').addEventListener('click', e => { if (e.target === $('#modal-backdrop')) closeModal(); });
       $('#modal-confirm').addEventListener('click', async () => {
@@ -1397,8 +1431,6 @@
       async function init() {
         try {
           db = await openDb(); words = await readAllWords();
-          // One-time opt-in via URL lets the user carry their Quizlet streak into Lexica.
-          applyQuizletStreakImport();
           // Normalize records if an older local schema or partial edit left fields missing.
           words = words.filter(w => w && w.id && typeof w.en === 'string' && typeof w.ru === 'string').map(w => ({...w, learned: Boolean(w.learned), learnedReverse: Boolean(w.learnedReverse), createdAt: Number(w.createdAt)||Date.now()}));
           renderHome(); renderWordList(); localizeDom(document.body);
