@@ -53,6 +53,9 @@
     .streak-number { font-size: 38px; letter-spacing: -.07em; font-weight: 850; line-height: 1; }
     .streak-hex { color: var(--orange); width: 32px; height: 32px; }
     .streak-copy { color: var(--muted); font-size: 13px; margin-top: 7px; }
+    .streak-import-btn { margin-top: 10px; padding: 6px 0; border: 0; background: transparent; color: var(--green-dark); font-size: 11px; font-weight: 750; text-align: left; line-height: 1.35; }
+    .streak-import-btn:active { opacity: .7; }
+    .streak-import-btn[hidden] { display: none; }
     .add-card { width: 100px; border: 1px solid #cfe4d1; border-radius: var(--radius); background: var(--green-pale); color: var(--green-dark); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 9px; font-size: 12px; font-weight: 750; box-shadow: var(--shadow); }
     .add-card svg { width: 31px; height: 31px; }
     .add-card:active, .primary:active, .secondary:active { transform: scale(.985); }
@@ -303,7 +306,7 @@
       <div class="hero">
         <div class="streak-card">
           <div class="streak-top"><span class="eyebrow">Серия</span><svg class="streak-hex" viewBox="0 0 40 40" fill="none"><path d="M20 3 34 11v17L20 36 6 28V11L20 3Z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M21 10c2 5-4 6-2 10 1 2 3 2 4 0 4 5 1 10-4 10-6 0-9-6-5-11 2-3 5-4 7-9Z" fill="currentColor" opacity=".85"/></svg></div>
-          <div><div class="streak-number" id="streak-number">0</div><div class="streak-copy" id="streak-caption">дней подряд</div></div>
+          <div><div class="streak-number" id="streak-number">0</div><div class="streak-copy" id="streak-caption">дней подряд</div><button type="button" class="streak-import-btn" id="restore-quizlet-streak">Перенести серию 64 дня из Quizlet</button></div>
         </div>
         <button class="add-card" id="open-add" aria-label="Добавить слова"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Добавить<br>слова</span></button>
       </div>
@@ -426,7 +429,7 @@
         'лексика':'Lexica','Открыть меню':'Open menu','Меню':'Menu','Твой словарь':'Your vocabulary',
         'Маленькими шагами.':'Small steps.','Большой словарный запас.':'A bigger vocabulary.',
         'Без рейтингов и лишнего шума. Только ты и слова.':'No leaderboards, no clutter. Just you and words.',
-        'Серия':'Streak','ЕЩЁ УЧУ':'STILL LEARNING','ВЫУЧЕНО':'MASTERED','дней подряд':'days in a row','день в серии':'day streak','дня в серии':'day streak','дней в серии':'day streak',
+        'Серия':'Streak','Перенести серию 64 дня из Quizlet':'Import 64-day Quizlet streak','Перенести серию из Quizlet?':'Import Quizlet streak?','Серия Lexica станет равна 64 дням, а сегодняшний день будет засчитан. Карточки и прогресс изучения не изменятся.':'Your Lexica streak will be set to 64 days and today will count as a study day. Cards and study progress will not change.','Установить 64 дня':'Set streak to 64 days','Серия установлена: 64 дня':'Streak set to 64 days','ЕЩЁ УЧУ':'STILL LEARNING','ВЫУЧЕНО':'MASTERED','дней подряд':'days in a row','день в серии':'day streak','дня в серии':'day streak','дней в серии':'day streak',
         'Добавить':'Add','слова':'words','слов в словаре':'cards in vocabulary','уже выучено':'mastered',
         'Что будем делать?':'What would you like to do?','Заучивание':'Study','Карточки по порядку — переворачивай и оценивай себя':'Study cards in order — flip and rate yourself',
         'Добавь первые слова, чтобы начать':'Add your first words to get started','Тест':'Quiz','Случайные вопросы, направления перевода и варианты ответа':'Random questions, both translation directions, and multiple-choice answers',
@@ -569,11 +572,16 @@
       function streakData() {
         return { count: Number(localStorage.getItem('lexica-streak') || 0), last: localStorage.getItem('lexica-last-day') || '' };
       }
+      function setQuizletStreak64() {
+        localStorage.setItem('lexica-streak', '64');
+        localStorage.setItem('lexica-last-day', todayKey());
+        localStorage.setItem('lexica-quizlet-streak-imported', 'true');
+        syncNativeWidget(64, todayKey());
+      }
       function applyQuizletStreakImport() {
         const url = new URL(window.location.href);
         if (url.searchParams.get('restoreQuizletStreak') !== '64') return;
-        localStorage.setItem('lexica-streak', '64');
-        localStorage.setItem('lexica-last-day', todayKey());
+        setQuizletStreak64();
         url.searchParams.delete('restoreQuizletStreak');
         history.replaceState(history.state, '', url.pathname + url.search + url.hash);
       }
@@ -591,6 +599,7 @@
         const current = data.last === todayKey() || data.last === dateOffset(todayKey(), -1) ? data.count : 0;
         $('#streak-number').textContent = current;
         $('#streak-caption').textContent = translateText(current === 1 ? 'день в серии' : current > 1 && current < 5 ? 'дня в серии' : 'дней в серии');
+        $('#restore-quizlet-streak').hidden = localStorage.getItem('lexica-quizlet-streak-imported') === 'true';
         syncNativeWidget(current, data.last);
       }
       function syncNativeWidget(current, lastDay) {
@@ -1371,6 +1380,13 @@
       $('#word-input').addEventListener('input', () => { chosenSuggestion = ''; $('#translation-input').value = ''; $('#suggestions').classList.remove('visible'); });
       $('#translation-input').addEventListener('input', () => { chosenSuggestion = ''; });
       $('#menu-button').addEventListener('click', handleMenu);
+      $('#restore-quizlet-streak').addEventListener('click', () => {
+        openModal('Перенести серию из Quizlet?', 'Серия Lexica станет равна 64 дням, а сегодняшний день будет засчитан. Карточки и прогресс изучения не изменятся.', 'Установить 64 дня', () => {
+          setQuizletStreak64();
+          renderHome();
+          showToast('Серия установлена: 64 дня');
+        });
+      });
       $('#modal-close').addEventListener('click', closeModal);
       $('#modal-backdrop').addEventListener('click', e => { if (e.target === $('#modal-backdrop')) closeModal(); });
       $('#modal-confirm').addEventListener('click', async () => {
