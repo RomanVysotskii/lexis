@@ -435,7 +435,7 @@
         'Серия':'Streak','ЕЩЁ УЧУ':'STILL LEARNING','ВЫУЧЕНО':'MASTERED','дней подряд':'days in a row','день в серии':'day streak','дня в серии':'day streak','дней в серии':'day streak',
         'Добавить':'Add','слова':'words','слов в словаре':'cards in vocabulary','уже выучено':'mastered',
         'Что будем делать?':'What would you like to do?','Заучивание':'Study','Карточки по порядку — переворачивай и оценивай себя':'Study cards in order — flip and rate yourself',
-        'Добавь первые слова, чтобы начать':'Add your first words to get started','Тест':'Quiz','Случайные вопросы, направления перевода и варианты ответа':'Random questions, both translation directions, and multiple-choice answers',
+        'Добавь первые слова, чтобы начать':'Add your first words to get started','Продолжение: только невыученные слова':'Continue with unmastered cards only','Тест':'Quiz','Случайные вопросы, направления перевода и варианты ответа':'Random questions, both translation directions, and multiple-choice answers',
         'Случайный порядок и перевод в обе стороны':'Random order and translation in both directions','Проверь себя, когда появятся карточки':'Test yourself once you have some cards',
         'Продолжить учёбу · только невыученные':'Continue studying · unmastered only','Режим заучивания':'Study mode','Назад':'Back',
         'Добавим пару слов?':'Add a few words?','Перевод можно выбрать из подсказок или написать самому.':'Choose a suggested translation or enter your own.',
@@ -644,8 +644,8 @@
         $('#home-progress-label').textContent = words.length ? `${masteredBoth}/${words.length} в обоих направлениях` : '';
         $('#continue-study-forward').hidden = !(words.length && learnedForward > 0 && learnedForward < words.length);
         $('#continue-study-reverse').hidden = !(words.length && learnedReverse > 0 && learnedReverse < words.length);
-        $('#start-study').querySelector('.mode-copy span').textContent = words.length ? 'Английское слово — перевод на русский' : 'Добавь первые слова, чтобы начать';
-        $('#start-study-reverse').querySelector('.mode-copy span').textContent = words.length ? 'Русское значение — вспомни английское слово' : 'Добавь первые слова, чтобы начать';
+        $('#start-study').querySelector('.mode-copy span').textContent = !words.length ? 'Добавь первые слова, чтобы начать' : learnedForward > 0 ? 'Продолжение: только невыученные слова' : 'Английское слово — перевод на русский';
+        $('#start-study-reverse').querySelector('.mode-copy span').textContent = !words.length ? 'Добавь первые слова, чтобы начать' : learnedReverse > 0 ? 'Продолжение: только невыученные слова' : 'Русское значение — вспомни английское слово';
         $('#start-quiz').querySelector('.mode-copy span').textContent = words.length ? 'Случайный порядок, перевод в обе стороны' : 'Проверь себя, когда появятся карточки';
         localizeDom($('#screen-home'));
       }
@@ -737,28 +737,43 @@
         if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return 'слова';
         return 'слов';
       }
-      function readSavedStudySession() {
+      function studySessionStorageKey(onlyUnlearned = studyOnlyUnlearned, reverse = studyReverse) {
+        return `${STUDY_SESSION_KEY}-${reverse ? 'reverse' : 'forward'}-${onlyUnlearned ? 'unlearned' : 'all'}`;
+      }
+      function readSavedStudySession(onlyUnlearned = studyOnlyUnlearned, reverse = studyReverse) {
         try {
-          const saved = JSON.parse(localStorage.getItem(STUDY_SESSION_KEY) || 'null');
+          const raw = localStorage.getItem(studySessionStorageKey(onlyUnlearned, reverse))
+            ?? localStorage.getItem(STUDY_SESSION_KEY);
+          const saved = JSON.parse(raw || 'null');
           if (!saved || saved.version !== 1 || !Array.isArray(saved.queue) || !Number.isInteger(saved.index)) return null;
+          if (saved.onlyUnlearned !== onlyUnlearned || saved.reverse !== reverse) return null;
           return saved;
         } catch (_) { return null; }
       }
       function saveStudySession() {
         try {
-          localStorage.setItem(STUDY_SESSION_KEY, JSON.stringify({
+          localStorage.setItem(studySessionStorageKey(), JSON.stringify({
             version: 1,
             queue: studyQueue,
             index: studyIndex,
             onlyUnlearned: studyOnlyUnlearned,
             reverse: studyReverse,
             results: [...studyResults.entries()],
+            savedAt: Date.now(),
             active: studyQueue.length > 0 && studyIndex < studyQueue.length
           }));
         } catch (_) {}
       }
       function clearStudySession() {
-        try { localStorage.removeItem(STUDY_SESSION_KEY); } catch (_) {}
+        try {
+          for (const key of [
+            STUDY_SESSION_KEY,
+            studySessionStorageKey(false, false),
+            studySessionStorageKey(true, false),
+            studySessionStorageKey(false, true),
+            studySessionStorageKey(true, true)
+          ]) localStorage.removeItem(key);
+        } catch (_) {}
       }
       function startStudy(onlyUnlearned = false, reverse = false, forceNew = false) {
         let restored = false;
@@ -796,7 +811,22 @@
         saveStudySession();
         showScreen('study'); renderStudy();
       }
-      function getStudyWords() { return studyQueue.map(id => words.find(w => w.id === id)).filter(Boolean); }
+      function startStudyFromHome(reverse = false) {
+        const savedSessions = [
+          readSavedStudySession(false, reverse),
+          readSavedStudySession(true, reverse)
+        ].filter(saved => saved?.active)
+          .sort((a, b) => (Number(b.savedAt) || 0) - (Number(a.savedAt) || 0));
+        if (savedSessions.length) {
+          startStudy(Boolean(savedSessions[0].onlyUnlearned), reverse);
+          return;
+        }
+        const hasMasteredCards = words.some(word => reverse ? word.learnedReverse : word.learned);
+        // First pass: show the full deck. After a pass has marked any cards mastered,
+        // new sessions contain only cards still unlearned in this direction.
+        startStudy(hasMasteredCards, reverse, true);
+      }
+            function getStudyWords() { return studyQueue.map(id => words.find(w => w.id === id)).filter(Boolean); }
       function rewindStudyTo(targetIndex) {
         // Rewinding invalidates this answer and every later answer in the current session.
         for (let i = Math.max(0, targetIndex); i < studyQueue.length; i++) {
@@ -1492,8 +1522,8 @@
       }
 
       $('#open-add').addEventListener('click', () => showScreen('add'));
-      $('#start-study').addEventListener('click', () => words.length ? startStudy(false,false) : showScreen('add'));
-      $('#start-study-reverse').addEventListener('click', () => words.length ? startStudy(false,true) : showScreen('add'));
+      $('#start-study').addEventListener('click', () => words.length ? startStudyFromHome(false) : showScreen('add'));
+      $('#start-study-reverse').addEventListener('click', () => words.length ? startStudyFromHome(true) : showScreen('add'));
       $('#start-quiz').addEventListener('click', () => words.length ? startQuiz() : showScreen('add'));
       $('#continue-study-forward').addEventListener('click', () => startStudy(true,false));
       $('#continue-study-reverse').addEventListener('click', () => startStudy(true,true));
