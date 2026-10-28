@@ -577,6 +577,8 @@
         }
         const target = event.state?.lexicaScreen || 'home';
         showScreen(target, false);
+        if (target === 'study') renderStudy();
+        if (target === 'quiz') renderQuiz();
       });
       history.replaceState({ lexicaScreen: 'home' }, '', location.href);
 
