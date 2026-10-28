@@ -51,7 +51,8 @@
     .streak-card { flex: 1; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 17px 16px 15px; min-height: 145px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow); }
     .streak-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .streak-number { font-size: 38px; letter-spacing: -.07em; font-weight: 850; line-height: 1; }
-    .streak-hex { color: var(--orange); width: 32px; height: 32px; }
+    .streak-hex { color: #858c86; width: 32px; height: 32px; transition: color .18s ease; }
+    .streak-hex.is-active { color: var(--orange); }
     .streak-copy { color: var(--muted); font-size: 13px; margin-top: 7px; }
     .add-card { width: 100px; border: 1px solid #cfe4d1; border-radius: var(--radius); background: var(--green-pale); color: var(--green-dark); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 9px; font-size: 12px; font-weight: 750; box-shadow: var(--shadow); }
     .add-card svg { width: 31px; height: 31px; }
@@ -299,9 +300,23 @@
     #screen-study .pill { flex: 1 1 0; min-width: 0; }
     #screen-study .study-card-area { min-height: 302px; }
     #screen-study .flashcard { min-height: 300px; }
-    #screen-study .gesture-hints { display: grid; grid-template-columns: 1fr 1fr; justify-content: initial; padding-inline: 0; }
-    #screen-study .gesture-hints .left,
-    #screen-study .gesture-hints .right { justify-self: center; }
+    #screen-study .progress-number { display: block; width: 100%; text-align: center; }
+    #screen-study .gesture-hints {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
+      padding-inline: 0;
+    }
+    #screen-study .gesture-hints > span {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      justify-self: stretch;
+      text-align: center;
+    }
+    #screen-study .gesture-hints .left { grid-column: 1; }
+    #screen-study .gesture-hints .right { grid-column: 2; }
     @media (max-height: 700px) {
       #screen-study .study-card-area { min-height: 254px; }
       #screen-study .flashcard { min-height: 242px; }
@@ -627,10 +642,16 @@
         syncNativeWidget(count, today);
       }
       function displayStreak() {
+        const today = todayKey();
         const data = streakData();
-        const current = data.last === todayKey() || data.last === dateOffset(todayKey(), -1) ? data.count : 0;
+        const extendedToday = data.last === today;
+        const current = extendedToday || data.last === dateOffset(today, -1) ? data.count : 0;
         $('#streak-number').textContent = current;
         $('#streak-caption').textContent = translateText(current === 1 ? 'день в серии' : current > 1 && current < 5 ? 'дня в серии' : 'дней в серии');
+        const streakIcon = $('#screen-home .streak-hex');
+        streakIcon.classList.toggle('is-active', extendedToday);
+        streakIcon.setAttribute('aria-label', extendedToday ? 'Серия продлена сегодня' : 'Сегодня серия ещё не продлена');
+        streakIcon.setAttribute('role', 'img');
         syncNativeWidget(current, data.last);
       }
       function syncNativeWidget(current, lastDay) {
