@@ -289,6 +289,47 @@
       .word-row-actions { gap: 0; }
       .edit-btn, .delete-btn { flex-basis: 30px; width: 30px; height: 32px; }
     }
+
+    /* Study screen: keep the total counter above the status pills without overlap on narrow phones. */
+    #screen-study .progress-head { flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 14px; }
+    #screen-study .progress-head > div:first-child { width: 100%; }
+    #screen-study .progress-number { font-size: clamp(14px, 4.5vw, 17px); line-height: 1.25; }
+    #screen-study .progress-track { margin-top: 7px; }
+    #screen-study .pills { width: 100%; justify-content: space-between; gap: 8px; }
+    #screen-study .pill { flex: 1 1 0; min-width: 0; }
+    #screen-study .study-card-area { min-height: 302px; }
+    #screen-study .flashcard { min-height: 300px; }
+    #screen-study .gesture-hints { display: grid; grid-template-columns: 1fr 1fr; justify-content: initial; padding-inline: 0; }
+    #screen-study .gesture-hints .left,
+    #screen-study .gesture-hints .right { justify-self: center; }
+    @media (max-height: 700px) {
+      #screen-study .study-card-area { min-height: 254px; }
+      #screen-study .flashcard { min-height: 242px; }
+    }
+
+    /* Keep the list title, total and actions vertically centred on one line. */
+    .list-head { align-items: center; flex-wrap: nowrap; gap: 6px; }
+    .list-head h2 { flex: 0 0 auto; line-height: 1; font-size: 19px; }
+    .list-head-actions { align-items: center; flex-wrap: nowrap; gap: 5px; }
+    #list-count { flex: 0 0 auto; align-self: center; line-height: 1; letter-spacing: .08em; }
+    .learned-marks { align-self: center; padding: 0; }
+    @media (max-width: 390px) {
+      .list-head { gap: 5px; }
+      .list-head-actions { gap: 4px; }
+      .list-head h2 { font-size: 18px; }
+      .sort-btn { gap: 3px; padding: 5px 6px; font-size: 11px; }
+      .merge-btn { padding: 6px 7px; font-size: 10px; }
+    }
+
+    /* Header detection uses the same selectable button treatment as file formats. */
+    .header-mode-options [data-import-header="auto"] { grid-column: 1 / -1; }
+    .header-mode-options .format-option { min-height: 40px; }
+    .header-mode-options .format-option.is-selected { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); box-shadow: inset 0 0 0 1px var(--green); }
+
+    /* Match page overscroll and safe-area backdrop to the active app theme. */
+    html, body { background-color: var(--bg); overscroll-behavior: none; }
+    @media (prefers-color-scheme: dark) { html, body { background-color: #101511; } }
+
   </style>
 </head>
 <body>
@@ -357,7 +398,7 @@
               <button type="button" class="format-option" data-import-format="|" aria-pressed="false">Текст · вертикальная черта</button>
             </div>
           </div>
-          <div class="field import-header-field"><div class="format-heading"><label class="format-heading-title" for="import-header">Первая строка</label><select id="import-header" class="format-auto import-header-select"><option value="auto">Автоопределение</option><option value="yes">Заголовки столбцов</option><option value="no">Это карточка</option></select></div></div>
+          <div class="field import-header-field"><div class="format-heading"><span class="format-heading-title">Первая строка</span></div><div class="format-options header-mode-options" id="import-header-options" role="group" aria-label="Обработка первой строки"><button type="button" class="format-option is-selected" data-import-header="auto" aria-pressed="true">Автоопределение</button><button type="button" class="format-option" data-import-header="yes" aria-pressed="false">Заголовки столбцов</button><button type="button" class="format-option" data-import-header="no" aria-pressed="false">Это карточка</button></div></div>
           <button class="secondary" type="button" id="import-button" style="width:100%">Импортировать</button>
           <p class="small-note">Дубликаты пропускаются. Исходный файл не изменяется.</p>
         </div>
@@ -395,6 +436,7 @@
       let studyReverse = false;
       let studyResults = new Map();
       let selectedImportFormat = 'auto';
+      let selectedImportHeader = 'auto';
       let wordSort = 'recent';
       let sortPanelOpen = false;
       let editingWordId = null;
@@ -1310,7 +1352,7 @@
             const delimiter = selected === 'auto' ? detectDelimiter((raw.split(/\r?\n/,1)[0] || '')) : selected === 'tab' ? '\t' : selected;
             const rows = parseDelimited(raw, delimiter);
             if (!rows.length) throw new Error('No rows found');
-            const headerMode = $('#import-header').value;
+            const headerMode = selectedImportHeader;
             const skipHeader = headerMode === 'yes' || (headerMode === 'auto' && headerLikely(rows[0]));
             if (skipHeader && rows.length < 2) throw new Error('The file only contains a header row');
             const dataRows = skipHeader ? rows.slice(1) : rows;
@@ -1370,6 +1412,14 @@
         selectedImportFormat = format;
         document.querySelectorAll('[data-import-format]').forEach(button => {
           const active = button.dataset.importFormat === format;
+          button.classList.toggle('is-selected', active);
+          button.setAttribute('aria-pressed', String(active));
+        });
+      }
+      function updateImportHeader(mode) {
+        selectedImportHeader = mode;
+        document.querySelectorAll('[data-import-header]').forEach(button => {
+          const active = button.dataset.importHeader === mode;
           button.classList.toggle('is-selected', active);
           button.setAttribute('aria-pressed', String(active));
         });
@@ -1533,6 +1583,7 @@
       $('#translate-button').addEventListener('click', translateWord);
       $('#import-button').addEventListener('click', importVocabulary);
       document.querySelectorAll('[data-import-format]').forEach(button => button.addEventListener('click', () => updateImportFormat(button.dataset.importFormat)));
+      document.querySelectorAll('[data-import-header]').forEach(button => button.addEventListener('click', () => updateImportHeader(button.dataset.importHeader)));
       $('#merge-button').addEventListener('click', startMergeReview);
       $('#sort-toggle').addEventListener('click', () => {
         sortPanelOpen = !sortPanelOpen;
