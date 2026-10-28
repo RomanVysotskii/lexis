@@ -709,7 +709,16 @@
           }
         });
         card.addEventListener('pointercancel', () => { pointerId = null; resetDrag(); gestureMoved = false; });
-        $('#study-prev').addEventListener('click', () => { if (studyIndex > 0) { studyIndex--; flipped = false; renderStudy(); } });
+        $('#study-prev').addEventListener('click', () => {
+          if (studyIndex > 0) {
+            // Going back makes the previous card active again, so remove its answer from this session's counters.
+            const previousWord = queue[studyIndex - 1];
+            if (previousWord) studyResults.delete(previousWord.id);
+            studyIndex--;
+            flipped = false;
+            renderStudy();
+          }
+        });
         $('#mark-learning').addEventListener('click', () => markAndNext(false));
         $('#mark-learned').addEventListener('click', () => markAndNext(true));
       }
