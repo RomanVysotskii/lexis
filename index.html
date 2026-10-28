@@ -459,14 +459,14 @@
         'Ещё учу':'Still learning','Выучено':'Mastered','Выучено ✓':'Mastered ✓','учу':'learning','знаю':'mastered',
         'Нужны карточки':'No cards yet','Добавь несколько слов — и устроим им перекрёстный допрос.':'Add a few words and put them to the test.','Новых вопросов нет.':'No new questions.','Все карточки уже встречались в тесте. Сбрось результаты теста, чтобы начать заново.':'Every card has already appeared in the quiz. Reset quiz results to start again.','Сбросить тест и пройти заново':'Reset quiz and start again','Продолжить тест':'Continue quiz','Не удалось сбросить результаты теста. Попробуй ещё раз.':'Could not reset quiz results. Try again.','Не удалось сохранить результат теста. Попробуй ещё раз.':'Could not save quiz result. Try again.','осталось в тесте':'left in quiz','новых':'new',
         'Тест завершён':'Quiz complete','Отличный результат.':'Excellent result.','Есть что повторить.':'More to review.','Вопросы шли в случайном порядке и в обоих направлениях.':'Questions were randomized and asked in both translation directions.',
-        'правильных ответов':'correct answers','результат':'score','Пройти ещё раз':'Try again','Выбери правильный перевод.':'Choose the correct translation.',
+        'правильных ответов':'correct answers','результат':'score','Пройти ещё раз':'Try again','Выбери правильный перевод.':'Choose the correct translation.','выучено':'mastered','ещё учу':'still learning','Новых':'New',
         'Верно! Так держать.':'Correct! Keep it up.','Результат':'Results','Следующий вопрос':'Next question','Варианты перевода · выбери подходящий':'Translation suggestions · choose one',
         'Варианты из переводчика · выбери по смыслу':'Suggestions from translation services · choose by meaning',
         'Сначала введи английское слово':'Enter an English word first','Ищу…':'Searching…','Подсказки готовы — проверь контекст':'Suggestions are ready — check the context',
         'Не удалось получить перевод. Введи его вручную или попробуй позже.':'Could not fetch translations. Enter one manually or try again later.',
         'Заполни слово и перевод':'Enter both the word and its translation','Такая карточка уже есть':'This card already exists','Добавлено. Следующее слово!':'Added. Next word!','Карточка добавлена':'Card added',
         'Не удалось сохранить карточку. Проверь хранилище браузера.':'Could not save the card. Check browser storage.','Карточка удалена':'Card deleted',
-        'Резервная копия подготовлена':'Backup is ready','Меню словаря':'Vocabulary menu','Сбросить прогресс':'Reset progress','Сбросить прогресс?':'Reset progress?',
+        'Резервная копия подготовлена':'Backup is ready','Меню словаря':'Vocabulary menu','Сбросить прогресс':'Reset progress','Сбросить прогресс?':'Reset progress?','Все карточки останутся в словаре, но снова станут невыученными в обоих направлениях. Результаты теста тоже сбросятся. Это действие нельзя отменить.':'All cards will remain in your vocabulary, but become unmastered in both study directions. Quiz results will also be reset. This cannot be undone.',
         'Все карточки останутся в словаре, но снова станут невыученными. Это действие нельзя отменить.':'All cards will stay in your vocabulary, but they will become unmastered again. This cannot be undone.',
         'Да, сбросить':'Yes, reset','Прогресс сброшен':'Progress reset','Не удалось выполнить действие':'Action failed',
         'Не удалось открыть локальное хранилище':'Could not open local storage','Открой приложение в современном браузере (Chrome, Safari или Firefox) и проверь, что для него разрешено хранение данных.':'Open the app in a modern browser (Chrome, Safari, or Firefox) and make sure storage is enabled.',
@@ -1466,7 +1466,7 @@
           ? `Cards: ${words.length}. Mastered in both directions: ${masteredBoth}.\n\nChoose a direction to continue, reset all progress, or export a backup.`
           : `Карточек: ${words.length}. Выучено в обоих направлениях: ${masteredBoth}.\n\nВыбери направление для продолжения, сбрось прогресс или экспортируй резервную копию.`;
         openModal('Меню словаря', message, LANG === 'en' ? 'Reset progress' : 'Сбросить прогресс', async () => {
-          openModal('Сбросить прогресс?', 'Все карточки останутся в словаре, но снова станут невыученными в обоих направлениях. Это действие нельзя отменить.', 'Да, сбросить', async () => {
+          openModal('Сбросить прогресс?', 'Все карточки останутся в словаре, но снова станут невыученными в обоих направлениях. Результаты теста тоже сбросятся. Это действие нельзя отменить.', 'Да, сбросить', async () => {
             const resetWords = words.map(w => {
               const reset = {...w, learned:false, learnedReverse:false};
               delete reset.quizStatus;
