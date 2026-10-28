@@ -1389,6 +1389,12 @@
           merged.learned = Boolean(a.learned && b.learned);
           merged.learnedReverse = Boolean(a.learnedReverse && b.learnedReverse);
         }
+        // Merging cards must not make a previously tested card reappear as a new quiz question.
+        if (a.quizStatus || b.quizStatus) {
+          merged.quizStatus = a.quizStatus === 'mastered' && b.quizStatus === 'mastered' ? 'mastered' : 'learning';
+        } else {
+          delete merged.quizStatus;
+        }
         const tx = db.transaction(STORE, 'readwrite');
         const done = transactionDone(tx);
         const store = tx.objectStore(STORE);
