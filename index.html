@@ -637,6 +637,15 @@
         showScreen('study'); renderStudy();
       }
       function getStudyWords() { return studyQueue.map(id => words.find(w => w.id === id)).filter(Boolean); }
+      function rewindStudyTo(targetIndex) {
+        // Rewinding invalidates this answer and every later answer in the current session.
+        for (let i = Math.max(0, targetIndex); i < studyQueue.length; i++) {
+          studyResults.delete(studyQueue[i]);
+        }
+        studyIndex = Math.max(0, targetIndex);
+        flipped = false;
+        renderStudy();
+      }
       function renderStudy() {
         const body = $('#study-body');
         const queue = getStudyWords();
@@ -649,8 +658,9 @@
         }
         if (studyIndex >= queue.length) {
           const pending = queue.some(w => !(studyReverse ? w.learnedReverse : w.learned));
-          body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Ты прошёл все карточки. При следующем прохождении счётчики начнутся с нуля.</p><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Повторить невыученные</button>' : '<button class="primary" id="completion-continue">Пройти ещё раз</button>'}<button class="secondary" id="completion-home">На главную</button></div></div>`;
+          body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Ты прошёл все карточки. При следующем прохождении счётчики начнутся с нуля.</p><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Повторить невыученные</button>' : '<button class="primary" id="completion-continue">Пройти ещё раз</button>'}<button class="secondary" id="completion-prev">Предыдущее слово</button><button class="secondary" id="completion-home">На главную</button></div></div>`;
           $('#completion-continue').addEventListener('click', () => startStudy(pending, studyReverse));
+          $('#completion-prev').addEventListener('click', () => rewindStudyTo(studyIndex - 1));
           $('#completion-home').addEventListener('click', goBack);
           localizeDom(body);
           return;
@@ -710,14 +720,7 @@
         });
         card.addEventListener('pointercancel', () => { pointerId = null; resetDrag(); gestureMoved = false; });
         $('#study-prev').addEventListener('click', () => {
-          if (studyIndex > 0) {
-            // Going back makes the previous card active again, so remove its answer from this session's counters.
-            const previousWord = queue[studyIndex - 1];
-            if (previousWord) studyResults.delete(previousWord.id);
-            studyIndex--;
-            flipped = false;
-            renderStudy();
-          }
+          if (studyIndex > 0) rewindStudyTo(studyIndex - 1);
         });
         $('#mark-learning').addEventListener('click', () => markAndNext(false));
         $('#mark-learned').addEventListener('click', () => markAndNext(true));
