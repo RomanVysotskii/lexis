@@ -162,6 +162,10 @@
     .answer.correct .answer-key { border-color: var(--green); color: var(--green-dark); }
     .answer.wrong { border-color: #efb4b0; background: var(--red-pale); color: #aa3838; }
     .answer:disabled { cursor: default; }
+    .quiz-status-counts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: 0 0 10px; }
+    .quiz-status-counts .pill { min-width: 0; padding: 7px 9px; font-size: 11px; }
+    #screen-quiz .completion-stats { flex-wrap: wrap; gap: 16px 22px; }
+    #screen-quiz .completion-stats > div { min-width: 58px; }
     .quiz-feedback { padding: 13px 3px; color: var(--muted); font-size: 13px; min-height: 43px; line-height: 1.45; }
     .quiz-feedback.good { color: var(--green-dark); }
     .quiz-feedback.bad { color: #b44444; }
@@ -189,7 +193,7 @@
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
     .small-note { color: #9aa399; font-size: 11px; line-height: 1.45; margin-top: 10px; }
     @media (min-width: 560px) { .app { padding-top: 28px; padding-bottom: 30px; } .modal-backdrop { align-items: center; } }
-    @media (max-width: 380px) { #screen-study .progress-head { flex-direction: column; align-items: stretch; gap: 10px; } #screen-study .pills { justify-content: space-between; } #screen-study .pill { min-width: 0; padding-inline: 10px; } }
+    @media (max-width: 380px) { #screen-study .progress-head { flex-direction: column; align-items: stretch; gap: 10px; } #screen-study .pills { justify-content: space-between; } #screen-study .pill { min-width: 0; padding-inline: 10px; } .quiz-status-counts { justify-content: space-between; } .quiz-status-counts .pill { padding-inline: 7px; } }
     @media (max-height: 700px) { .flashcard { min-height: 230px; } .face .word-text { font-size: 30px; } .app { padding-top: 12px; } .topbar { margin-bottom: 11px; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
@@ -401,6 +405,7 @@
       let quizIndex = 0;
       let quizScore = 0;
       let quizAnswered = false;
+      let quizAnsweredId = null;
       let quizQuestion = null;
       let modalAction = null;
       let toastTimer = null;
@@ -931,7 +936,7 @@
       function startQuiz() {
         // Only unanswered cards become questions; every card remains available as a distractor below.
         quizQueue = shuffle(words.filter(w => !['mastered','learning'].includes(w.quizStatus)).map(w => w.id));
-        quizIndex = 0; quizScore = 0; quizAnswered = false; quizQuestion = null;
+        quizIndex = 0; quizScore = 0; quizAnswered = false; quizAnsweredId = null; quizQuestion = null;
         showScreen('quiz'); renderQuiz();
       }
       async function resetQuizAndRestart() {
@@ -1012,12 +1017,25 @@
         const q = quizQuestion;
         body.innerHTML = '<div class="progress-head"><div style="flex:1"><div class="progress-number">' + (quizIndex + 1) + '<span> / ' + quizQueue.length + '</span></div><div class="progress-track"><div class="progress-fill" style="width:' + (quizIndex / quizQueue.length * 100) + '%"></div></div></div><div class="pill">' + quizScore + (LANG === 'en' ? ' correct' : ' верно') + '</div></div><div class="quiz-status-counts"><div class="pill orange" id="quiz-learning-count">' + counts.learning + (LANG === 'en' ? ' learning' : ' ещё учу') + '</div><div class="pill green" id="quiz-mastered-count">' + counts.mastered + (LANG === 'en' ? ' mastered' : ' выучено') + '</div><div class="pill" id="quiz-remaining-count">' + counts.remaining + (LANG === 'en' ? ' left in test' : ' осталось в тесте') + '</div></div><div class="quiz-card"><div><div class="face-label">' + q.promptLanguage + ' → ' + q.answerLanguage + '</div><div class="quiz-word">' + esc(q.prompt) + '</div></div></div><div class="answer-list" id="answer-list">' + q.options.map((option,i) => '<button class="answer" data-answer="' + esc(option.id) + '"><span class="answer-key">' + ['A','B','C'][i] + '</span><span>' + esc(option.value) + '</span></button>').join('') + '</div><div class="quiz-feedback" id="quiz-feedback">Выбери правильный перевод.</div><div class="quiz-bottom"><button class="primary" id="quiz-next" style="width:100%" hidden>' + (quizIndex === quizQueue.length - 1 ? 'Результат' : 'Следующий вопрос') + ' →</button></div>';
         $('#answer-list').querySelectorAll('[data-answer]').forEach(button => button.addEventListener('click', () => answerQuiz(button.dataset.answer)));
-        $('#quiz-next').addEventListener('click', () => { quizIndex++; quizQuestion = null; quizAnswered = false; renderQuiz(); });
+        $('#quiz-next').addEventListener('click', () => { quizIndex++; quizQuestion = null; quizAnswered = false; quizAnsweredId = null; renderQuiz(); });
         localizeDom(body);
+        if (quizAnswered && quizQuestion) {
+          $('#answer-list').querySelectorAll('[data-answer]').forEach(button => {
+            button.disabled = true;
+            if (button.dataset.answer === quizQuestion.correctId) button.classList.add('correct');
+            else if (button.dataset.answer === quizAnsweredId) button.classList.add('wrong');
+          });
+          const wasCorrect = quizAnsweredId === quizQuestion.correctId;
+          const feedback = $('#quiz-feedback');
+          feedback.className = 'quiz-feedback ' + (wasCorrect ? 'good' : 'bad');
+          feedback.textContent = translateText(wasCorrect ? 'Верно! Так держать.' : 'Правильный ответ: ' + quizQuestion.correctValue);
+          $('#quiz-next').hidden = false;
+        }
       }
       async function answerQuiz(id) {
         if (quizAnswered || !quizQuestion) return;
         quizAnswered = true;
+        quizAnsweredId = id;
         const correct = id === quizQuestion.correctId;
         const word = words.find(w => w.id === quizQuestion.id);
         if (!word) { quizAnswered = false; return; }
@@ -1026,6 +1044,7 @@
           await putWord(updated);
         } catch (_) {
           quizAnswered = false;
+          quizAnsweredId = null;
           showToast('Не удалось сохранить результат теста. Попробуй ещё раз.');
           return;
         }
@@ -1451,7 +1470,7 @@
             words = resetWords;
             clearStudySession();
             studyQueue = []; studyIndex = 0; studyResults = new Map();
-            quizQueue = []; quizIndex = 0; quizScore = 0; quizAnswered = false; quizQuestion = null;
+            quizQueue = []; quizIndex = 0; quizScore = 0; quizAnswered = false; quizAnsweredId = null; quizQuestion = null;
             renderHome(); renderWordList(); showToast('Прогресс сброшен');
           });
         });
