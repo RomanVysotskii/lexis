@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#f7f8f4" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#111713" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Локальные карточки для изучения слов: заучивание, тесты и перевод. Работает без аккаунта.">
@@ -139,6 +139,11 @@
     .list-head-actions { display: flex; align-items: center; gap: 8px; }
     .merge-btn { min-height: 36px; padding: 8px 11px; border: 1px solid #cce4ce; background: var(--green-pale); color: var(--green-dark); border-radius: 11px; font-size: 12px; font-weight: 800; white-space: nowrap; }
     .merge-btn:active { transform: scale(.98); }
+    .format-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+    .format-heading-title, .format-auto { display: inline-flex; align-items: center; min-height: 38px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--field-bg); font-size: 12px; font-weight: 750; }
+    .format-heading-title { color: var(--muted); }
+    .format-auto { color: var(--ink); cursor: pointer; }
+    .format-auto.is-selected { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); box-shadow: inset 0 0 0 1px var(--green); }
     .format-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .format-option { min-width: 0; min-height: 42px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--field-bg); color: var(--ink); font-size: 12px; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
     .format-option[data-import-format="dash"] { grid-column: 1 / -1; }
@@ -296,14 +301,19 @@
         <div class="import-content">
           <p class="subtext import-description">Столбцы: английское слово, перевод. JSON подходит для резервных копий Lexica.</p>
           <div class="field"><label for="import-file">Файл словаря</label><input type="file" id="import-file" accept=".csv,.tsv,.txt,.json,text/csv,text/tab-separated-values,application/json"></div>
-          <div class="field"><label>Формат файла</label><div class="format-options" id="import-format-options" role="group" aria-label="Формат импорта">
-            <button type="button" class="format-option is-selected" data-import-format="auto" aria-pressed="true">Автоопределение</button>
-            <button type="button" class="format-option" data-import-format="dash" aria-pressed="false">TXT · слово - перевод</button>
-            <button type="button" class="format-option" data-import-format="," aria-pressed="false">CSV · запятая</button>
-            <button type="button" class="format-option" data-import-format=";" aria-pressed="false">CSV · точка с запятой</button>
-            <button type="button" class="format-option" data-import-format="tab" aria-pressed="false">TSV · табуляция</button>
-            <button type="button" class="format-option" data-import-format="|" aria-pressed="false">Текст · вертикальная черта</button>
-          </div></div>
+          <div class="field">
+            <div class="format-heading">
+              <span class="format-heading-title">Формат файла</span>
+              <button type="button" class="format-auto is-selected" data-import-format="auto" aria-pressed="true">Автоопределение</button>
+            </div>
+            <div class="format-options" id="import-format-options" role="group" aria-label="Формат импорта">
+              <button type="button" class="format-option" data-import-format="dash" aria-pressed="false">TXT · слово - перевод</button>
+              <button type="button" class="format-option" data-import-format="," aria-pressed="false">CSV · запятая</button>
+              <button type="button" class="format-option" data-import-format=";" aria-pressed="false">CSV · точка с запятой</button>
+              <button type="button" class="format-option" data-import-format="tab" aria-pressed="false">TSV · табуляция</button>
+              <button type="button" class="format-option" data-import-format="|" aria-pressed="false">Текст · вертикальная черта</button>
+            </div>
+          </div>
           <div class="field"><label for="import-header">Первая строка</label><select id="import-header"><option value="auto">Автоопределение</option><option value="yes">Заголовки столбцов</option><option value="no">Это карточка</option></select></div>
           <button class="secondary" type="button" id="import-button" style="width:100%">Импортировать</button>
           <p class="small-note">Дубликаты пропускаются. Исходный файл не изменяется.</p>
@@ -338,6 +348,7 @@
       let flipped = false;
       let studyOnlyUnlearned = false;
       let studyReverse = false;
+      let studyResults = new Map();
       let selectedImportFormat = 'auto';
       let mergeInProgress = false;
       let mergeReviewed = new Set();
@@ -535,7 +546,10 @@
         const toast = $('#toast'); toast.textContent = translateText(message); toast.classList.add('show');
         clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
       }
-      function showScreen(name) {
+      function showScreen(name, recordHistory = true) {
+        if (recordHistory && name !== currentScreen) {
+          history.pushState({ lexicaScreen: name }, '', location.href);
+        }
         currentScreen = name;
         document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === `screen-${name}`));
         $('#menu-button').style.visibility = name === 'home' ? 'visible' : 'hidden';
@@ -543,6 +557,28 @@
         if (name === 'home') renderHome();
         if (name === 'add') renderWordList();
       }
+      function goBack() {
+        if ($('#modal-backdrop')?.classList.contains('open')) {
+          closeModal();
+          return;
+        }
+        if (currentScreen !== 'home' && history.state?.lexicaScreen) {
+          history.back();
+          return;
+        }
+        showScreen('home', false);
+      }
+      window.addEventListener('popstate', event => {
+        if ($('#modal-backdrop')?.classList.contains('open')) {
+          closeModal();
+          history.pushState({ lexicaScreen: currentScreen }, '', location.href);
+          return;
+        }
+        const target = event.state?.lexicaScreen || 'home';
+        showScreen(target, false);
+      });
+      history.replaceState({ lexicaScreen: 'home' }, '', location.href);
+
       function renderHome() {
         displayStreak();
         const masteredBoth = words.filter(w => w.learned && w.learnedReverse).length;
@@ -588,8 +624,9 @@
       function startStudy(onlyUnlearned = false, reverse = false) {
         studyOnlyUnlearned = onlyUnlearned;
         studyReverse = reverse;
+        studyResults = new Map();
         studyQueue = (onlyUnlearned ? words.filter(w => !(reverse ? w.learnedReverse : w.learned)) : [...words])
-          .sort((a,b) => (Number(a.createdAt)||0) - (Number(b.createdAt)||0) || String(a.en).localeCompare(String(b.en)))
+          .sort((a,b) => (Number(a.createdAt)||0) - (Number(b.createdAt)||0))
           .map(w => w.id);
         studyIndex = 0; flipped = false;
         const heading = $('#screen-study .back-row .eyebrow');
@@ -603,22 +640,23 @@
         if (!queue.length) {
           body.innerHTML = `<div class="completion"><div class="completion-mark">${words.length ? '✓' : '＋'}</div><h1>${words.length ? 'Всё выучено!' : 'Сначала добавим слова'}</h1><p class="subtext">${words.length ? 'В этой подборке больше нет невыученных карточек. Можно сбросить прогресс или повторить весь словарь.' : 'Без карточек тут как на экзамене без билетов.'}</p><div class="button-stack"><button class="primary" id="completion-continue">${words.length ? 'Повторить все слова' : 'Добавить слова'}</button>${words.length ? '<button class="secondary" id="completion-home">На главную</button>' : ''}</div></div>`;
           $('#completion-continue').addEventListener('click', () => words.length ? startStudy(false, studyReverse) : showScreen('add'));
-          $('#completion-home')?.addEventListener('click', () => showScreen('home'));
+          $('#completion-home')?.addEventListener('click', goBack);
           localizeDom(body);
           return;
         }
         if (studyIndex >= queue.length) {
-          const learnedInQueue = queue.filter(w => studyReverse ? w.learnedReverse : w.learned).length;
-          const pending = queue.length - learnedInQueue;
-          body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Карточки пройдены. Отметки сохранились на устройстве.</p><div class="completion-stats"><div><strong>${learnedInQueue}</strong><span>выучено в подборке</span></div><div><strong>${pending}</strong><span>ещё повторить</span></div></div><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Продолжить учёбу</button>' : '<button class="primary" id="completion-continue">Повторить все слова</button>'}<button class="secondary" id="completion-home">На главную</button></div></div>`;
-          $('#completion-continue').addEventListener('click', () => pending ? startStudy(true, studyReverse) : startStudy(false, studyReverse));
-          $('#completion-home').addEventListener('click', () => showScreen('home'));
+          const pending = queue.some(w => !(studyReverse ? w.learnedReverse : w.learned));
+          body.innerHTML = `<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Сессия завершена</div><h1>Хорошая работа.</h1><p class="subtext">Ты прошёл все карточки. При следующем прохождении счётчики начнутся с нуля.</p><div class="button-stack">${pending ? '<button class="primary" id="completion-continue">Повторить невыученные</button>' : '<button class="primary" id="completion-continue">Пройти ещё раз</button>'}<button class="secondary" id="completion-home">На главную</button></div></div>`;
+          $('#completion-continue').addEventListener('click', () => startStudy(pending, studyReverse));
+          $('#completion-home').addEventListener('click', goBack);
           localizeDom(body);
           return;
         }
         const word = queue[studyIndex];
-        const learnedCount = queue.filter(w => studyReverse ? w.learnedReverse : w.learned).length;
-        const pendingCount = queue.length - learnedCount;
+        const sessionValues = [...studyResults.values()];
+        const learnedCount = sessionValues.filter(Boolean).length;
+        const pendingCount = sessionValues.length - learnedCount;
+        const passedCount = sessionValues.length;
         const frontLanguage = studyReverse ? 'Русский' : 'English';
         const backLanguage = studyReverse ? 'English' : 'Русский';
         const frontWord = studyReverse ? word.ru : word.en;
@@ -626,7 +664,7 @@
         const frontHint = studyReverse ? 'Нажми, чтобы вспомнить английское слово' : 'Нажми, чтобы увидеть перевод';
         const backHint = 'Нажми, чтобы вернуться';
         const speakButton = '<button class="speak-btn" id="speak-word" type="button" aria-label="Слушать произношение" title="Слушать" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>';
-        body.innerHTML = `<div class="progress-head"><div style="flex:1;min-width:0"><div class="progress-number">${studyIndex+1}<span> / ${queue.length}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(studyIndex/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} учу</div><div class="pill green">${learnedCount} знаю</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">${frontLanguage}</span>${studyReverse ? '' : speakButton}<div class="word-text">${esc(frontWord)}</div><span class="tap-hint">${frontHint}</span></div><div class="face back"><span class="face-label">${backLanguage}</span>${studyReverse ? speakButton : ''}<div class="word-text">${esc(backWord)}</div><span class="tap-hint">${backHint}</span></div></div><div class="swipe-stamp left">ЕЩЁ УЧУ</div><div class="swipe-stamp right">ВЫУЧЕНО</div></div><div class="gesture-hints"><span class="left"><b>←</b> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
+        body.innerHTML = `<div class="progress-head"><div style="flex:1;min-width:0"><div class="progress-number">${passedCount}<span> / ${queue.length} пройдено</span></div><div class="progress-track"><div class="progress-fill" style="width:${(passedCount/queue.length)*100}%"></div></div></div><div class="pills"><div class="pill orange">${pendingCount} ещё учу</div><div class="pill green">${learnedCount} выучено</div></div></div><div class="study-card-area"><div class="flashcard ${flipped?'flipped':''}" id="flashcard" role="button" tabindex="0" aria-label="Перевернуть карточку"><div class="flashcard-inner"><div class="face front"><span class="face-label">${frontLanguage}</span>${studyReverse ? '' : speakButton}<div class="word-text">${esc(frontWord)}</div><span class="tap-hint">${frontHint}</span></div><div class="face back"><span class="face-label">${backLanguage}</span>${studyReverse ? speakButton : ''}<div class="word-text">${esc(backWord)}</div><span class="tap-hint">${backHint}</span></div></div><div class="swipe-stamp left">ЕЩЁ УЧУ</div><div class="swipe-stamp right">ВЫУЧЕНО</div></div><div class="gesture-hints"><span class="left"><b>←</b> Ещё учу</span><span class="right">Выучено <b>→</b></span></div><div class="study-controls"><button class="circle-control" id="study-prev" aria-label="Предыдущее слово" ${studyIndex===0?'disabled':''}>${iconBack}</button><button class="secondary" id="mark-learning">Ещё учу</button><button class="primary" id="mark-learned">Выучено ✓</button></div></div>`;
         localizeDom(body);
         const card = $('#flashcard');
         card.addEventListener('click', e => { if (e.target.closest('#speak-word')) return; if (suppressCardClick) { suppressCardClick = false; return; } if (gestureMoved) { gestureMoved = false; return; } flipped = !flipped; card.classList.toggle('flipped', flipped); });
@@ -701,6 +739,7 @@
         try { await putWord(updated); }
         catch (error) { showToast(LANG === 'en' ? 'Could not save study progress. Try again.' : 'Не удалось сохранить прогресс. Попробуй ещё раз.'); return; }
         Object.assign(word, updated);
+        studyResults.set(word.id, isLearned);
         recordStudyDay();
         if (studyIndex < queue.length-1) { studyIndex++; flipped = false; renderStudy(); }
         else { studyIndex++; renderStudy(); }
@@ -745,7 +784,7 @@
         if (quizIndex >= quizQueue.length) {
           const percent = Math.round(quizScore/quizQueue.length*100);
           body.innerHTML = `<div class="completion"><div class="completion-mark">${percent >= 80 ? '✦' : '✓'}</div><div class="eyebrow">Тест завершён</div><h1>${percent >= 80 ? 'Отличный результат.' : 'Есть что повторить.'}</h1><p class="subtext">Вопросы шли в случайном порядке и в обоих направлениях.</p><div class="completion-stats"><div><strong>${quizScore}/${quizQueue.length}</strong><span>правильных ответов</span></div><div><strong>${percent}%</strong><span>результат</span></div></div><div class="button-stack"><button class="primary" id="quiz-again">Пройти ещё раз</button><button class="secondary" id="quiz-home">На главную</button></div></div>`;
-          $('#quiz-again').addEventListener('click', startQuiz); $('#quiz-home').addEventListener('click', () => showScreen('home')); localizeDom(body); return;
+          $('#quiz-again').addEventListener('click', startQuiz); $('#quiz-home').addEventListener('click', goBack); localizeDom(body); return;
         }
         if (!quizQuestion) quizQuestion = makeQuizQuestion();
         const q = quizQuestion;
@@ -887,7 +926,8 @@
         const duplicate = words.some(w => w.en.toLocaleLowerCase() === en.toLocaleLowerCase() && w.ru.toLocaleLowerCase() === ru.toLocaleLowerCase());
         if (duplicate) { showToast('Такая карточка уже есть'); return; }
         pendingSubmit = true; $('#save-word').disabled = true; $('#save-and-next').disabled = true;
-        const word = { id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), en, ru, learned: false, learnedReverse: false, createdAt: Date.now() };
+        const latestCreatedAt = words.reduce((latest, item) => Math.max(latest, Number(item.createdAt) || 0), 0);
+        const word = { id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), en, ru, learned: false, learnedReverse: false, createdAt: Math.max(Date.now(), latestCreatedAt + 1) };
         try {
           await putWord(word); words.push(word); renderWordList(); renderHome();
           $('#word-input').value = ''; $('#translation-input').value = ''; chosenSuggestion = ''; $('#suggestions').classList.remove('visible');
@@ -967,7 +1007,7 @@
           if (selectedImportFormat === 'dash' || (selectedImportFormat === 'auto' && looksLikeDashText)) {
             const parsed = parseDashText(raw);
             invalidLineCount = parsed.invalidLines.length;
-            incoming = parsed.rows.map(([en,ru])=>({en,ru,learned:false,learnedReverse:false,createdAt:Date.now()}));
+            incoming = parsed.rows.map(([en,ru])=>({en,ru,learned:false,learnedReverse:false,createdAt:0}));
             if (!incoming.length) throw new Error(LANG === 'en' ? 'No lines matched “word - translation”.' : 'Не найдено строк формата «слово - перевод».');
           } else if (file.name.toLowerCase().endsWith('.json') || file.type === 'application/json') {
             const parsed = JSON.parse(raw);
@@ -983,16 +1023,17 @@
             const skipHeader = headerMode === 'yes' || (headerMode === 'auto' && headerLikely(rows[0]));
             if (skipHeader && rows.length < 2) throw new Error('The file only contains a header row');
             const dataRows = skipHeader ? rows.slice(1) : rows;
-            incoming = dataRows.map(row=>({en:String(row[0] || '').trim(),ru:String(row[1] || '').trim(),learned:false,learnedReverse:false,createdAt:Date.now()})).filter(w=>w.en && w.ru);
+            incoming = dataRows.map(row=>({en:String(row[0] || '').trim(),ru:String(row[1] || '').trim(),learned:false,learnedReverse:false,createdAt:0})).filter(w=>w.en && w.ru);
           }
           const known = new Set(words.map(w=>`${normalizeMatch(w.en)}\u0000${normalizeMatch(w.ru)}`));
           const additions = [];
+          let nextCreatedAt = Math.max(Date.now(), ...words.map(w => Number(w.createdAt) || 0).map(value => value + 1));
           let duplicates = 0;
           for (const item of incoming) {
             const key = `${normalizeMatch(item.en)}\u0000${normalizeMatch(item.ru)}`;
             if (known.has(key)) { duplicates++; continue; }
             known.add(key);
-            additions.push({...item, id:(crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), learned:Boolean(item.learned), learnedReverse:Boolean(item.learnedReverse)});
+            additions.push({...item, createdAt:Number(item.createdAt) || nextCreatedAt++, id:(crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), learned:Boolean(item.learned), learnedReverse:Boolean(item.learnedReverse)});
           }
           if (additions.length) {
             const tx = db.transaction(STORE, 'readwrite');
@@ -1159,7 +1200,7 @@
       $('#start-quiz').addEventListener('click', () => words.length ? startQuiz() : showScreen('add'));
       $('#continue-study-forward').addEventListener('click', () => startStudy(true,false));
       $('#continue-study-reverse').addEventListener('click', () => startStudy(true,true));
-      document.querySelectorAll('[data-go="home"]').forEach(button => button.addEventListener('click', () => showScreen('home')));
+      document.querySelectorAll('[data-go="home"]').forEach(button => button.addEventListener('click', goBack));
       $('#word-form').addEventListener('submit', e => addWord(e, false));
       $('#save-and-next').addEventListener('click', e => addWord(e, true));
       $('#translate-button').addEventListener('click', translateWord);
