@@ -427,7 +427,7 @@
         'лексика':'Lexica','Открыть меню':'Open menu','Меню':'Menu','Твой словарь':'Your vocabulary',
         'Маленькими шагами.':'Small steps.','Большой словарный запас.':'A bigger vocabulary.',
         'Без рейтингов и лишнего шума. Только ты и слова.':'No leaderboards, no clutter. Just you and words.',
-        'Серия':'Streak','Перенести серию 64 дня из Quizlet':'Import 64-day Quizlet streak','Перенести серию из Quizlet?':'Import Quizlet streak?','Серия Lexica станет равна 64 дням, а сегодняшний день будет засчитан. Карточки и прогресс изучения не изменятся.':'Your Lexica streak will be set to 64 days and today will count as a study day. Cards and study progress will not change.','Установить 64 дня':'Set streak to 64 days','Серия установлена: 64 дня':'Streak set to 64 days','ЕЩЁ УЧУ':'STILL LEARNING','ВЫУЧЕНО':'MASTERED','дней подряд':'days in a row','день в серии':'day streak','дня в серии':'day streak','дней в серии':'day streak',
+        'Серия':'Streak','ЕЩЁ УЧУ':'STILL LEARNING','ВЫУЧЕНО':'MASTERED','дней подряд':'days in a row','день в серии':'day streak','дня в серии':'day streak','дней в серии':'day streak',
         'Добавить':'Add','слова':'words','слов в словаре':'cards in vocabulary','уже выучено':'mastered',
         'Что будем делать?':'What would you like to do?','Заучивание':'Study','Карточки по порядку — переворачивай и оценивай себя':'Study cards in order — flip and rate yourself',
         'Добавь первые слова, чтобы начать':'Add your first words to get started','Тест':'Quiz','Случайные вопросы, направления перевода и варианты ответа':'Random questions, both translation directions, and multiple-choice answers',
@@ -452,7 +452,7 @@
         'выучено в подборке':'mastered in this set','ещё повторить':'to review','Продолжить учёбу':'Continue studying',
         'Английский':'English','Русский':'Russian','English':'English','Нажми, чтобы увидеть перевод':'Tap to reveal the translation','Нажми, чтобы вспомнить английское слово':'Tap to recall the English word','Нажми, чтобы вернуться':'Tap to flip back',
         'Ещё учу':'Still learning','Выучено':'Mastered','Выучено ✓':'Mastered ✓','учу':'learning','знаю':'mastered',
-        'Нужны карточки':'No cards yet','Добавь несколько слов — и устроим им перекрёстный допрос.':'Add a few words and put them to the test.',
+        'Нужны карточки':'No cards yet','Добавь несколько слов — и устроим им перекрёстный допрос.':'Add a few words and put them to the test.','Новых вопросов нет.':'No new questions.','Все карточки уже встречались в тесте. Сбрось результаты теста, чтобы начать заново.':'Every card has already appeared in the quiz. Reset quiz results to start again.','Сбросить тест и пройти заново':'Reset quiz and start again','Продолжить тест':'Continue quiz','Не удалось сбросить результаты теста. Попробуй ещё раз.':'Could not reset quiz results. Try again.','Не удалось сохранить результат теста. Попробуй ещё раз.':'Could not save quiz result. Try again.','осталось в тесте':'left in quiz','новых':'new',
         'Тест завершён':'Quiz complete','Отличный результат.':'Excellent result.','Есть что повторить.':'More to review.','Вопросы шли в случайном порядке и в обоих направлениях.':'Questions were randomized and asked in both translation directions.',
         'правильных ответов':'correct answers','результат':'score','Пройти ещё раз':'Try again','Выбери правильный перевод.':'Choose the correct translation.',
         'Верно! Так держать.':'Correct! Keep it up.','Результат':'Results','Следующий вопрос':'Next question','Варианты перевода · выбери подходящий':'Translation suggestions · choose one',
@@ -921,10 +921,32 @@
         for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
         return arr;
       }
+      function getQuizStatusCounts() {
+        return {
+          mastered: words.filter(w => w.quizStatus === 'mastered').length,
+          learning: words.filter(w => w.quizStatus === 'learning').length,
+          remaining: words.filter(w => !['mastered','learning'].includes(w.quizStatus)).length
+        };
+      }
       function startQuiz() {
-        // Each current vocabulary card appears once in a test; question direction is randomized independently.
-        quizQueue = shuffle(words.map(w => w.id)); quizIndex = 0; quizScore = 0; quizAnswered = false; quizQuestion = null;
+        // Only unanswered cards become questions; every card remains available as a distractor below.
+        quizQueue = shuffle(words.filter(w => !['mastered','learning'].includes(w.quizStatus)).map(w => w.id));
+        quizIndex = 0; quizScore = 0; quizAnswered = false; quizQuestion = null;
         showScreen('quiz'); renderQuiz();
+      }
+      async function resetQuizAndRestart() {
+        const resetWords = words.map(w => {
+          const reset = {...w};
+          delete reset.quizStatus;
+          return reset;
+        });
+        try {
+          await saveAll(resetWords);
+          words = resetWords;
+          startQuiz();
+        } catch (_) {
+          showToast('Не удалось сбросить результаты теста. Попробуй ещё раз.');
+        }
       }
       function normalizeMatch(value) {
         return String(value ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
@@ -936,6 +958,7 @@
         const target = englishPrompt ? current.ru : current.en;
         const usedValues = new Set([normalizeMatch(target)]);
         const distractors = [];
+        // Intentionally use ALL other cards, including cards already classified by the quiz.
         for (const word of shuffle(words.filter(w => w.id !== current.id))) {
           const value = englishPrompt ? word.ru : word.en;
           const key = normalizeMatch(value);
@@ -947,28 +970,66 @@
         const options = shuffle([{id:current.id, value:target}, ...distractors]);
         return {id:current.id, prompt:englishPrompt?current.en:current.ru, promptLanguage:englishPrompt?'English':'Русский', answerLanguage:englishPrompt?'Русский':'English', correctId:current.id, correctValue:target, options};
       }
+      function renderQuizStatusCounts() {
+        const counts = getQuizStatusCounts();
+        const learning = $('#quiz-learning-count');
+        const mastered = $('#quiz-mastered-count');
+        if (learning) learning.textContent = String(counts.learning) + (LANG === 'en' ? ' learning' : ' ещё учу');
+        if (mastered) mastered.textContent = String(counts.mastered) + (LANG === 'en' ? ' mastered' : ' выучено');
+      }
       function renderQuiz() {
         const body = $('#quiz-body');
         if (!words.length) {
           body.innerHTML = '<div class="empty-state"><div class="empty-icon">?</div><h2>Нужны карточки</h2><p>Добавь несколько слов — и устроим им перекрёстный допрос.</p><button class="primary" id="quiz-add">Добавить слова</button></div>';
           $('#quiz-add').addEventListener('click', () => showScreen('add')); localizeDom(body); return;
         }
-        if (quizIndex >= quizQueue.length) {
-          const percent = Math.round(quizScore/quizQueue.length*100);
-          body.innerHTML = `<div class="completion"><div class="completion-mark">${percent >= 80 ? '✦' : '✓'}</div><div class="eyebrow">Тест завершён</div><h1>${percent >= 80 ? 'Отличный результат.' : 'Есть что повторить.'}</h1><p class="subtext">Вопросы шли в случайном порядке и в обоих направлениях.</p><div class="completion-stats"><div><strong>${quizScore}/${quizQueue.length}</strong><span>правильных ответов</span></div><div><strong>${percent}%</strong><span>результат</span></div></div><div class="button-stack"><button class="primary" id="quiz-again">Пройти ещё раз</button><button class="secondary" id="quiz-home">На главную</button></div></div>`;
-          $('#quiz-again').addEventListener('click', startQuiz); $('#quiz-home').addEventListener('click', goBack); localizeDom(body); return;
+
+        const counts = getQuizStatusCounts();
+        if (quizQueue.length === 0 && quizIndex === 0) {
+          body.innerHTML = '<div class="completion"><div class="completion-mark">✓</div><div class="eyebrow">Тест</div><h1>Новых вопросов нет.</h1><p class="subtext">Все карточки уже встречались в тесте. Сбрось результаты теста, чтобы начать заново.</p><div class="completion-stats"><div><strong>' + counts.mastered + '</strong><span>выучено</span></div><div><strong>' + counts.learning + '</strong><span>ещё учу</span></div><div><strong>' + counts.remaining + '</strong><span>новых</span></div></div><div class="button-stack"><button class="primary" id="quiz-reset">Сбросить тест и пройти заново</button><button class="secondary" id="quiz-home">На главную</button></div></div>';
+          $('#quiz-reset').addEventListener('click', resetQuizAndRestart);
+          $('#quiz-home').addEventListener('click', goBack);
+          localizeDom(body);
+          return;
         }
+
+        if (quizIndex >= quizQueue.length) {
+          const total = quizQueue.length;
+          const percent = total ? Math.round(quizScore / total * 100) : 0;
+          const continueButton = counts.remaining > 0 ? '<button class="secondary" id="quiz-continue">Продолжить тест (' + counts.remaining + ')</button>' : '';
+          body.innerHTML = '<div class="completion"><div class="completion-mark">' + (percent >= 80 ? '✦' : '✓') + '</div><div class="eyebrow">Тест завершён</div><h1>' + (percent >= 80 ? 'Отличный результат.' : 'Есть что повторить.') + '</h1><p class="subtext">Каждая карточка попадает в вопросы только один раз до сброса теста. Уже встречавшиеся карточки остаются среди вариантов ответа.</p><div class="completion-stats"><div><strong>' + quizScore + '/' + total + '</strong><span>правильных ответов</span></div><div><strong>' + percent + '%</strong><span>результат</span></div><div><strong>' + counts.mastered + '</strong><span>выучено</span></div><div><strong>' + counts.learning + '</strong><span>ещё учу</span></div></div><div class="button-stack">' + continueButton + '<button class="primary" id="quiz-reset">Сбросить тест и пройти заново</button><button class="secondary" id="quiz-home">На главную</button></div></div>';
+          $('#quiz-continue')?.addEventListener('click', startQuiz);
+          $('#quiz-reset').addEventListener('click', resetQuizAndRestart);
+          $('#quiz-home').addEventListener('click', goBack);
+          localizeDom(body);
+          return;
+        }
+
+        while (quizIndex < quizQueue.length && !words.some(w => w.id === quizQueue[quizIndex])) quizIndex++;
+        if (quizIndex >= quizQueue.length) { renderQuiz(); return; }
         if (!quizQuestion) quizQuestion = makeQuizQuestion();
+        if (!quizQuestion) { quizIndex++; renderQuiz(); return; }
         const q = quizQuestion;
-        body.innerHTML = `<div class="progress-head"><div style="flex:1"><div class="progress-number">${quizIndex+1}<span> / ${quizQueue.length}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(quizIndex/quizQueue.length)*100}%"></div></div></div><div class="pill">${quizScore} верно</div></div><div class="quiz-card"><div><div class="face-label">${q.promptLanguage} → ${q.answerLanguage}</div><div class="quiz-word">${esc(q.prompt)}</div></div></div><div class="answer-list" id="answer-list">${q.options.map((option,i)=>`<button class="answer" data-answer="${esc(option.id)}"><span class="answer-key">${['A','B','C'][i]}</span><span>${esc(option.value)}</span></button>`).join('')}</div><div class="quiz-feedback" id="quiz-feedback">Выбери правильный перевод.</div><div class="quiz-bottom"><button class="primary" id="quiz-next" style="width:100%" hidden>${quizIndex===quizQueue.length-1?'Результат':'Следующий вопрос'} →</button></div>`;
+        body.innerHTML = '<div class="progress-head"><div style="flex:1"><div class="progress-number">' + (quizIndex + 1) + '<span> / ' + quizQueue.length + '</span></div><div class="progress-track"><div class="progress-fill" style="width:' + (quizIndex / quizQueue.length * 100) + '%"></div></div></div><div class="pill">' + quizScore + (LANG === 'en' ? ' correct' : ' верно') + '</div></div><div class="quiz-status-counts"><div class="pill orange" id="quiz-learning-count">' + counts.learning + (LANG === 'en' ? ' learning' : ' ещё учу') + '</div><div class="pill green" id="quiz-mastered-count">' + counts.mastered + (LANG === 'en' ? ' mastered' : ' выучено') + '</div><div class="pill" id="quiz-remaining-count">' + counts.remaining + (LANG === 'en' ? ' left in test' : ' осталось в тесте') + '</div></div><div class="quiz-card"><div><div class="face-label">' + q.promptLanguage + ' → ' + q.answerLanguage + '</div><div class="quiz-word">' + esc(q.prompt) + '</div></div></div><div class="answer-list" id="answer-list">' + q.options.map((option,i) => '<button class="answer" data-answer="' + esc(option.id) + '"><span class="answer-key">' + ['A','B','C'][i] + '</span><span>' + esc(option.value) + '</span></button>').join('') + '</div><div class="quiz-feedback" id="quiz-feedback">Выбери правильный перевод.</div><div class="quiz-bottom"><button class="primary" id="quiz-next" style="width:100%" hidden>' + (quizIndex === quizQueue.length - 1 ? 'Результат' : 'Следующий вопрос') + ' →</button></div>';
         $('#answer-list').querySelectorAll('[data-answer]').forEach(button => button.addEventListener('click', () => answerQuiz(button.dataset.answer)));
         $('#quiz-next').addEventListener('click', () => { quizIndex++; quizQuestion = null; quizAnswered = false; renderQuiz(); });
         localizeDom(body);
       }
-      function answerQuiz(id) {
+      async function answerQuiz(id) {
         if (quizAnswered || !quizQuestion) return;
         quizAnswered = true;
         const correct = id === quizQuestion.correctId;
+        const word = words.find(w => w.id === quizQuestion.id);
+        if (!word) { quizAnswered = false; return; }
+        const updated = {...word, quizStatus: correct ? 'mastered' : 'learning'};
+        try {
+          await putWord(updated);
+        } catch (_) {
+          quizAnswered = false;
+          showToast('Не удалось сохранить результат теста. Попробуй ещё раз.');
+          return;
+        }
+        words = words.map(w => w.id === updated.id ? updated : w);
         recordStudyDay();
         if (correct) quizScore++;
         $('#answer-list').querySelectorAll('[data-answer]').forEach(button => {
@@ -976,9 +1037,17 @@
           if (button.dataset.answer === quizQuestion.correctId) button.classList.add('correct');
           else if (button.dataset.answer === id) button.classList.add('wrong');
         });
-        const feedback = $('#quiz-feedback'); feedback.className = `quiz-feedback ${correct?'good':'bad'}`;
-        feedback.textContent = translateText(correct ? 'Верно! Так держать.' : `Правильный ответ: ${quizQuestion.correctValue}`);
-        $('#quiz-next').hidden = false; $('#quiz-next').focus();
+        const feedback = $('#quiz-feedback');
+        feedback.className = 'quiz-feedback ' + (correct ? 'good' : 'bad');
+        feedback.textContent = translateText(correct ? 'Верно! Так держать.' : 'Правильный ответ: ' + quizQuestion.correctValue);
+        $('#quiz-next').hidden = false;
+        renderQuizStatusCounts();
+        const remaining = $('#quiz-remaining-count');
+        if (remaining) {
+          const count = getQuizStatusCounts().remaining;
+          remaining.textContent = String(count) + (LANG === 'en' ? ' left in quiz' : ' осталось в тесте');
+        }
+        $('#quiz-next').focus();
       }
       function renderSuggestions(items, sourceLabel = 'Варианты перевода · выбери подходящий') {
         const box = $('#suggestions'); const list = $('#suggestion-list');
