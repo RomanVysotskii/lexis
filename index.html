@@ -883,7 +883,7 @@
         const duplicate = words.some(w => w.en.toLocaleLowerCase() === en.toLocaleLowerCase() && w.ru.toLocaleLowerCase() === ru.toLocaleLowerCase());
         if (duplicate) { showToast('Такая карточка уже есть'); return; }
         pendingSubmit = true; $('#save-word').disabled = true; $('#save-and-next').disabled = true;
-        const word = { id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), en, ru, learned: false, createdAt: Date.now() };
+        const word = { id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`), en, ru, learned: false, learnedReverse: false, createdAt: Date.now() };
         try {
           await putWord(word); words.push(word); renderWordList(); renderHome();
           $('#word-input').value = ''; $('#translation-input').value = ''; chosenSuggestion = ''; $('#suggestions').classList.remove('visible');
